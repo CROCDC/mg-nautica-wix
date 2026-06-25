@@ -20,7 +20,20 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "MG Náutica",
     locale: "es_AR",
-    images: ["/site/hero-ocean.jpg"],
+    // WhatsApp/Facebook need og:image:secure_url + explicit dimensions, so the
+    // image is a full object (a bare string only emits og:image). 1200×630 crop.
+    // Absolute URLs: metadataBase resolves `url` but NOT `secureUrl`, and Meta's
+    // bot rejects relative image URLs — so both must be hardcoded absolute HTTPS.
+    images: [
+      {
+        url: "https://mgnauticabroker.com/site/og-image.jpg",
+        secureUrl: "https://mgnauticabroker.com/site/og-image.jpg",
+        type: "image/jpeg",
+        width: 1200,
+        height: 630,
+        alt: "MG Náutica — broker y gestor naval",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",

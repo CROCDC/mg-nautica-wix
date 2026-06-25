@@ -26,8 +26,21 @@ export async function generateMetadata({
     openGraph: {
       title: boat.name,
       description,
-      images: boat.mainImage ? [boat.mainImage.url] : undefined,
       type: "website",
+      // Full image object so WhatsApp gets og:image:secure_url (+ dims when Wix
+      // provides them); a bare string only emits og:image. See app/layout.tsx.
+      images: boat.mainImage
+        ? [
+            {
+              url: boat.mainImage.url,
+              secureUrl: boat.mainImage.url,
+              alt: boat.mainImage.alt,
+              ...(boat.mainImage.width && boat.mainImage.height
+                ? { width: boat.mainImage.width, height: boat.mainImage.height }
+                : {}),
+            },
+          ]
+        : undefined,
     },
   };
 }
