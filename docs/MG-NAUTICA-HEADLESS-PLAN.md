@@ -241,8 +241,11 @@ This removes the most complex/uncertain piece from the critical path.
 - [x] **Phase 1 — Scaffold + repo + pipeline:** ✅ Next.js 16 + React 19 + TS scaffold, Wix SDK
       client (`lib/wix.ts`), `next/image` remote patterns for `static.wixstatic.com`, ported
       `main.css` + nav/footer + home hero + client JS from `mg-nautica-web`. GitHub repo created,
-      **CI green** (lint/typecheck/build on Actions). **Pending sub-steps:** branch protection on
-      `main`; enable deploy (set `DEPLOY_ENABLED=true` + Vercel secrets); first Preview/Prod deploy.
+      **CI green** (lint/typecheck/build on Actions). **Deploy LIVE** at
+      **https://mg-nautica-wix.vercel.app** (Vercel team `next-tech`); auto-deploy via Actions
+      verified (`DEPLOY_ENABLED=true` + the 3 Vercel secrets). Deploy builds **on Vercel** (not
+      `--prebuilt`) so `NEXT_PUBLIC_WIX_CLIENT_ID` is present at build. Deployment Protection off
+      (public); project framework set to `nextjs`. **Pending sub-step:** branch protection on `main`.
 - [x] **Phase 2 — Catalog + Product detail:** ✅ `/category/[slug]` (grid + sort, category-filtered)
       and `/product-page/[slug]` (gallery+lightbox, Ricos description, price/compare-at, WhatsApp CTA)
       fed by Wix Stores V3. 63 product pages prerendered (ISR 10m). Data layer in `lib/wix.ts`
@@ -253,8 +256,9 @@ This removes the most complex/uncertain piece from the critical path.
       (dropped "Accesorios" — no accessories data in the store). No dead links. Build/CI green.
 - [ ] **Phase 4 — (optional) Cart + Wix-hosted checkout.**
 - [ ] **Phase 5 — SEO:** metadata, sitemap, OG, Product schema, ISR.
-- [ ] **Phase 6 — Deploy + cutover:** confirm Production deploy on Vercel, point domain DNS to
-      Vercel, verify, monitor. (The pipeline already exists from Phase 1 — this is the domain swap.)
+- [~] **Phase 6 — Deploy + cutover:** ✅ Production deploy live on Vercel
+      (https://mg-nautica-wix.vercel.app), auto-deploy verified. **Remaining:** point the real
+      domain `mgnauticabroker.com` DNS to Vercel (the cutover) + monitor. Plan for low-traffic hours.
 
 ## 13. Tech stack / dependencies
 
