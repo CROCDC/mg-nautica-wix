@@ -247,7 +247,10 @@ This removes the most complex/uncertain piece from the critical path.
       and `/product-page/[slug]` (gallery+lightbox, Ricos description, price/compare-at, WhatsApp CTA)
       fed by Wix Stores V3. 63 product pages prerendered (ISR 10m). Data layer in `lib/wix.ts`
       (wix:image→CDN, Ricos renderer). Build/lint/typecheck green; CI green. **The blank page is fixed.**
-- [ ] **Phase 3 — Home + static pages + nav/footer** (port `home.html`, `base.html`, static templates).
+- [x] **Phase 3 — Home + static pages + nav/footer:** ✅ home wired to live Wix data (featured
+      boats + real count) + services/CTA; ported `/quienes-somos`, `/servicios`,
+      `/vender-tu-embarcacion`, `/contacto` (forms → WhatsApp CTA) + custom 404. Nav reconciled
+      (dropped "Accesorios" — no accessories data in the store). No dead links. Build/CI green.
 - [ ] **Phase 4 — (optional) Cart + Wix-hosted checkout.**
 - [ ] **Phase 5 — SEO:** metadata, sitemap, OG, Product schema, ISR.
 - [ ] **Phase 6 — Deploy + cutover:** confirm Production deploy on Vercel, point domain DNS to
