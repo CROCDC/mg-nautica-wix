@@ -111,14 +111,27 @@ integration — keeps CI in full control and leaves us one step from moving off 
 | URL pattern (keep identical for SEO) | `/product-page/<slug>`, `/category/<slug>` |
 | Primary CTA | WhatsApp → `https://wa.me/5491126949628` |
 
-**Categories** (note: Wix slugs are mislabeled vs their display names):
+**Categories** (Catalog V3, confirmed live via POC — 10 visible categories; slugs are
+mislabeled vs display names, a leftover from a clothing template). Counts overlap because a
+boat belongs to several categories (type + region). Out of **63 public products**:
 
-| Display | Wix slug |
-|---|---|
-| Todos los productos | `all-products` |
-| 🇦🇷 Embarcaciones bandera Argentina | `botas-náuticas` |
-| 🇺🇾 Embarcaciones en Uruguay | `ropa-náutica` |
-| 🌎 Embarcaciones en el exterior | `accesorios-a-bordo` |
+| # products | Display name | Wix slug | category id |
+|---|---|---|---|
+| 63 | All Products | `all-products` | `a9461314-…` (= every product's `mainCategoryId`) |
+| 49 | 🇦🇷 EMBARCACIONES BANDERA ARGENTINA | `botas-náuticas` | `51c7a24e-…` |
+| 41 | 🇦🇷 BUENOS AIRES ZONA NORTE Y CABA | `buenos-aires-zona-norte-y-caba` | `9e26b454-…` |
+| 33 | ⛵️🇦🇷 VELEROS | `⛵️🇦🇷veleros-bs-as-zona-norte-caba` | `e5fef466-…` |
+| 8 | 🇺🇾 EMBARCACIONES EN URUGUAY | `ropa-náutica` | `9ed8621a-…` |
+| 7 | 🇦🇷 EMB A MOTOR | `🇦🇷emb-a-motor` | `78bc467e-…` |
+| 6 | 🌎 EMBARCACIONES EN EL EXTERIOR | `accesorios-a-bordo` | `3a45a41d-…` |
+| 4 | 🇦🇷 BUENOS AIRES ZONA SUR | `🇦🇷emb-zona-sur` | `7657701c-…` |
+| 1 | EMB MOTOR | `emb-motor` | `1e84e3d3-…` |
+| 0 | EMB VELA | `emb-vela` | `1f047a16-…` |
+
+> The catalog is split by **type** (vela vs motor — beyond sailboats there are motorboats /
+> jet-ski under EMB MOTOR / EMB A MOTOR) and by **region** (AR zona norte/sur, UY, exterior).
+> Some slugs contain emoji (`⛵️🇦🇷…`, `🇦🇷emb-a-motor`) → URL-encode them in routes. The
+> nav's "Accesorios Náuticos" / "Curso Brasil" are **site pages**, not store categories.
 
 **Top nav:** Inicio · CATALOGO · Quiénes Somos · Vendé tu Embarcación · Accesorios Náuticos ·
 Curso Internacional Brasil.
@@ -132,22 +145,37 @@ Curso Internacional Brasil.
 4. Verify Headless API access is live by running the POC (Phase 0). Do **not** upgrade the
    plan until the POC proves what Core unlocks.
 
-## 7. Data mapping (what we pull from Wix Stores)
+## 7. Data mapping — **Wix Stores Catalog V3** (confirmed in Phase 0)
 
-Per product: `name`, `slug`, `description` (rich text), `price` / `discountedPrice`,
-`media.items[]` (images — host `static.wixstatic.com`), `ribbon`, `stock/availability`,
-`productOptions/variants` (if any), **`additionalInfoSections[]`** (likely where boat specs
-live: eslora, año, motor, ubicación, bandera), and `collectionIds`.
+The site is on **Catalog V3**, not V1 (V1 endpoints return `CATALOG_V3_CALLING_CATALOG_V1_API`).
+Use `productsV3` from `@wix/stores` + `categories` from `@wix/categories`.
 
-> ⚠️ **Confirm in the POC** how the boat specs are actually stored per product
-> (additionalInfoSections vs custom fields vs description). This drives the product-detail layout.
+Per product (`productsV3.queryProducts()` / `getProductBySlug(slug, { fields: [...] })`):
+
+| Field | V3 path | Notes |
+|---|---|---|
+| Name / slug / visible | `name`, `slug`, `visible` | slugs are clean, accented (`velero-clásico-…`) |
+| **Price** | `actualPriceRange.minValue.amount` (string) | `compareAtPriceRange` = strike-through "before" price |
+| Currency | request field `CURRENCY` | **USD** only |
+| **Images** | `media.main.image`, `media.itemsInfo.items[]` | **`wix:image://v1/<mediaId>/…` URIs**, NOT https → must convert to `static.wixstatic.com` (use the SDK media helper) |
+| **Specs / details** | **`description`** (request `DESCRIPTION`) | **Ricos rich content** (`{ nodes:[…] }`). This is where eslora/año/motor/ubicación live — render it. `PLAIN_DESCRIPTION` gives plain text. |
+| Categories | `mainCategoryId`, `allCategoriesInfo` (request `ALL_CATEGORIES_INFO`) | see §5 tree |
+| Ribbon | `additionalRibbons` | |
+| Options/variants | `options` `[]`, `variantsInfo` (1 default) | **no real variants** — boats are single-SKU |
+| Inventory | `inventory` | not tracked (`trackInventory:false`, always in stock) |
+
+> ✅ Phase 0 settled: **`infoSections` is empty** — specs are in the **`description` (Ricos)**.
+> `queryProducts({ fields: [...] })` valid enums include: `URL, CURRENCY, INFO_SECTION,
+> PLAIN_DESCRIPTION, DESCRIPTION, MEDIA_ITEMS_INFO, THUMBNAIL, DIRECT_CATEGORIES_INFO,
+> ALL_CATEGORIES_INFO, DISCOUNT_INFO, BREADCRUMBS_INFO, MIN_VARIANT_PRICE_INFO`.
+> Render the Ricos rich content with `@wix/ricos` (or a small custom renderer).
 
 ## 8. Routes to build (mirror the current site 1:1)
 
 - `/` — home (hero, "Quiénes somos", featured boats gallery, WhatsApp CTA, podcast/CTA blocks)
 - `/category/[slug]` — catalog/gallery: grid of boats, **price filter**, **sort**, "Cargar más"
 - `/product-page/[slug]` — **product detail (the page that's currently blank)**: image gallery,
-  title, price/offer price, specs (additionalInfoSections), description, **WhatsApp / inquiry CTA**
+  title, price/offer price, specs + description (from the **Ricos rich `description`**), **WhatsApp / inquiry CTA**
 - Static: `/quienes-somos`, `/vender-tu-embarcacion`, `/home-1-1-1` (accesorios), `/nuevo-curso-brasil`
 - Cart + checkout (see Phase 4 — may be optional)
 
@@ -206,8 +234,10 @@ This removes the most complex/uncertain piece from the critical path.
 
 ## 12. Phased roadmap
 
-- [ ] **Phase 0 — Validate (read-only POC):** create OAuth app / API key, list the 71 real
-      products via `@wix/sdk`. Confirm specs storage + whether checkout is needed.
+- [x] **Phase 0 — Validate (read-only POC):** ✅ OAuth client `7d680ee7-…` works (visitor
+      tokens). **63 public products** (the "71" includes hidden/drafts). Site on **Catalog V3**.
+      Specs live in the **Ricos `description`** (`infoSections` empty). No variants. USD only.
+      Categories mapped (§5). Media are `wix:image://` URIs needing conversion.
 - [x] **Phase 1 — Scaffold + repo + pipeline:** ✅ Next.js 16 + React 19 + TS scaffold, Wix SDK
       client (`lib/wix.ts`), `next/image` remote patterns for `static.wixstatic.com`, ported
       `main.css` + nav/footer + home hero + client JS from `mg-nautica-web`. GitHub repo created,
@@ -226,8 +256,9 @@ This removes the most complex/uncertain piece from the critical path.
 ```
 next, react, typescript
 styling: reuse mg-nautica-web app/static/css/main.css (global CSS / CSS Modules) — Tailwind optional
-@wix/sdk @wix/stores @wix/ecom @wix/redirects
-(image) next/image  (icons) lucide-react (optional)
+@wix/sdk @wix/stores (productsV3) @wix/categories @wix/ecom @wix/redirects
+rich text: @wix/ricos (render the product description) — or a small custom Ricos renderer
+(image) next/image + Wix media-URI → static.wixstatic.com helper  (icons) lucide-react (optional)
 source control: GitHub (public repo)   CI: GitHub Actions (lint/typecheck/build/test)
 deploy: GitHub Actions → Vercel CLI (vercel deploy --prebuilt)   hosting: Vercel
 secrets: WIX_CLIENT_ID (public), WIX_API_KEY (server only), VERCEL_TOKEN/ORG_ID/PROJECT_ID (Actions)
@@ -235,11 +266,11 @@ secrets: WIX_CLIENT_ID (public), WIX_API_KEY (server only), VERCEL_TOKEN/ORG_ID/
 
 ## 14. Open questions to resolve during the POC
 
-1. How are boat specs stored per product (additionalInfoSections / custom / description)?
-2. Is on-site checkout actually wanted, or is WhatsApp/lead-gen enough?
-3. Product variants/options in use? (likely none for boats)
-4. Multi-currency or USD only?
-5. Any products hidden/draft (71 in store vs ~63 public) — include or exclude?
+1. ~~How are boat specs stored~~ — **in the Ricos `description`** (infoSections empty).
+2. Is on-site checkout actually wanted, or is WhatsApp/lead-gen enough? **(still open — building lead-gen first)**
+3. ~~Variants/options~~ — **none** (single-SKU boats).
+4. ~~Multi-currency or USD only~~ — **USD only**.
+5. ~~71 vs 63~~ — **render the 63 public**; hidden/drafts aren't exposed to visitor tokens.
 6. ~~Deploy pipeline + repo visibility~~ — **decided: GitHub Actions-owned deploy via Vercel
    CLI, public repo** (see §4).
 
