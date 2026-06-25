@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getAllBoats, type Boat } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
+import CountUp from "@/components/CountUp";
 
 // Always fetch the latest catalog from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -56,8 +57,8 @@ export default async function Home() {
             </div>
             <div className="hero-stats">
               <div>
-                <div className="hero-stat-num" data-count={countDisplay} data-suffix="">
-                  0
+                <div className="hero-stat-num">
+                  <CountUp value={countDisplay} />
                 </div>
                 <div className="hero-stat-label">Embarcaciones disponibles</div>
               </div>
@@ -66,8 +67,8 @@ export default async function Home() {
                 <div className="hero-stat-label">Argentina, Uruguay y el mundo</div>
               </div>
               <div>
-                <div className="hero-stat-num" data-count="10" data-suffix="+">
-                  0+
+                <div className="hero-stat-num">
+                  <CountUp value={10} suffix="+" />
                 </div>
                 <div className="hero-stat-label">Años de experiencia</div>
               </div>
