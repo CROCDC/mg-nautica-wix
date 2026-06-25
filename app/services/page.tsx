@@ -42,7 +42,7 @@ const SERVICES = [
   },
 ];
 
-export default function Servicios() {
+export default function Services() {
   return (
     <>
       <section className="section">
@@ -75,7 +75,7 @@ export default function Servicios() {
           <a className="btn btn-primary btn-lg" href={WHATSAPP_URL} target="_blank" rel="noopener">
             💬 WhatsApp
           </a>
-          <Link className="btn btn-outline-white btn-lg" href="/contacto">
+          <Link className="btn btn-outline-white btn-lg" href="/contact">
             Formulario de contacto
           </Link>
         </div>

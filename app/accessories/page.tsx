@@ -10,10 +10,10 @@ export const metadata: Metadata = {
   title: "Accesorios náuticos",
   description:
     "Accesorios náuticos en venta: motores, gomones, trailers, heladeras y más. Argentina y Uruguay.",
-  alternates: { canonical: "/accesorios" },
+  alternates: { canonical: "/accessories" },
 };
 
-export default async function Accesorios() {
+export default async function Accessories() {
   const items = await getAccessories();
 
   return (

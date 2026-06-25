@@ -3,7 +3,7 @@ import Script from "next/script";
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";
 
-// Embarcaciones column points at the real Wix category slugs (confirmed in plan §5).
+// Boats column points at the real Wix category slugs (confirmed in plan §5).
 const BOAT_LINKS = [
   { href: "/category/all-products", label: "Catálogo completo" },
   { href: "/category/botas-náuticas", label: "🇦🇷 Bandera Argentina" },
@@ -12,10 +12,10 @@ const BOAT_LINKS = [
 ];
 
 const COMPANY_LINKS = [
-  { href: "/quienes-somos", label: "Quiénes somos" },
-  { href: "/servicios", label: "Servicios" },
-  { href: "/vender-tu-embarcacion", label: "Vendé tu embarcación" },
-  { href: "/contacto", label: "Contacto" },
+  { href: "/about-us", label: "Quiénes somos" },
+  { href: "/services", label: "Servicios" },
+  { href: "/sell-your-boat", label: "Vendé tu embarcación" },
+  { href: "/contact", label: "Contacto" },
 ];
 
 export default function Footer() {

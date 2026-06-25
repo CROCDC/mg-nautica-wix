@@ -17,7 +17,7 @@ const REGIONAL = [
   { name: "Víctor", area: "Piriápolis" },
 ];
 
-export default function QuienesSomos() {
+export default function AboutUs() {
   return (
     <>
       <div className="page-banner">
@@ -129,7 +129,7 @@ export default function QuienesSomos() {
           <a className="btn btn-primary btn-lg" href={WHATSAPP_URL} target="_blank" rel="noopener">
             💬 WhatsApp
           </a>
-          <Link className="btn btn-outline-white btn-lg" href="/contacto">
+          <Link className="btn btn-outline-white btn-lg" href="/contact">
             Ver todos los contactos
           </Link>
         </div>

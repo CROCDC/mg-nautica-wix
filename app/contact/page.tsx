@@ -39,7 +39,7 @@ const CONTACTS = [
   { icon: LT, href: "https://linktr.ee/Mg.nautica", title: "Linktree", handle: "linktr.ee/Mg.nautica" },
 ];
 
-export default function Contacto() {
+export default function Contact() {
   return (
     <>
       <div className="page-banner">

@@ -30,7 +30,7 @@ const STEPS = [
   },
 ];
 
-export default function VenderTuEmbarcacion() {
+export default function SellYourBoat() {
   return (
     <>
       <div className="page-banner">
@@ -77,7 +77,7 @@ export default function VenderTuEmbarcacion() {
               </span>
               <div className="doc-hero">
                 <Image
-                  src="/site/documentacion-nautica.jpg"
+                  src="/site/nautical-documents.jpg"
                   alt="Documentación náutica"
                   width={800}
                   height={500}

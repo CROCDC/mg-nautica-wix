@@ -1,14 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 
-// Provisional routes — mirror the Wix URLs (/category/<slug>) and are finalized in Phase 3.
+// Catalog points at the Wix category URL (/category/<slug>); the rest are local routes.
 const NAV = [
   { href: "/category/all-products", label: "Embarcaciones" },
-  { href: "/accesorios", label: "Accesorios" },
-  { href: "/servicios", label: "Servicios" },
-  { href: "/vender-tu-embarcacion", label: "Vendé tu embarcación" },
-  { href: "/quienes-somos", label: "Quiénes somos" },
-  { href: "/contacto", label: "Contacto" },
+  { href: "/accessories", label: "Accesorios" },
+  { href: "/brazil-course", label: "Curso en Brasil" },
+  { href: "/services", label: "Servicios" },
+  { href: "/sell-your-boat", label: "Vendé tu embarcación" },
+  { href: "/about-us", label: "Quiénes somos" },
+  { href: "/contact", label: "Contacto" },
 ];
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";

@@ -138,7 +138,7 @@ export default async function Home() {
             ))}
           </div>
           <div style={{ textAlign: "center", marginTop: "2rem" }}>
-            <Link className="btn btn-outline" href="/servicios">
+            <Link className="btn btn-outline" href="/services">
               Ver todos los servicios
             </Link>
           </div>
@@ -150,7 +150,7 @@ export default async function Home() {
         <h2>¿Querés vender tu embarcación?</h2>
         <p>Te acompañamos en cada paso: desde la valuación hasta la transferencia definitiva.</p>
         <div className="cta-row">
-          <Link className="btn btn-primary btn-lg" href="/vender-tu-embarcacion">
+          <Link className="btn btn-primary btn-lg" href="/sell-your-boat">
             Gestión integral
           </Link>
           <a className="btn btn-outline-white btn-lg" href={WHATSAPP_URL} target="_blank" rel="noopener">
