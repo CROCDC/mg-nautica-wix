@@ -281,6 +281,12 @@ secrets: WIX_CLIENT_ID (public), WIX_API_KEY (server only), VERCEL_TOKEN/ORG_ID/
 
 ## 15. Risks & notes
 
+- **Design principle — NO derivation (owner's directive).** The ported design assumed
+  structured fields Wix lacks (boat type, flag, year, eslora, spec blocks). We do **not** infer
+  any of these from the name or description (regex/keywords can be wrong). We show only reliable
+  owner-set data: name, price (+ sale), images, the description as-is, and **real category
+  membership** — the latter refills the design's slots (type/flag/region tags, catalog filters,
+  detail chips) honestly. The structured spec-blocks stay removed; the description carries detail.
 - Owner keeps the Wix dashboard workflow (✅), but **loses the Wix visual editor** for the
   storefront — layout changes are now code.
 - Checkout (if used) still routes through Wix's hosted page.
