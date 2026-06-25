@@ -36,6 +36,12 @@ const pillRow = { display: "flex", gap: ".5rem", flexWrap: "wrap" as const };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
+// Parse a price-filter param; treat blank/0/invalid as "no bound".
+const toNum = (s: string) => {
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? n : null;
+};
+
 function sortBoats(boats: Boat[], sort: string): Boat[] {
   if (sort === "price-asc") return [...boats].sort((a, b) => (a.priceUsd ?? 0) - (b.priceUsd ?? 0));
   if (sort === "price-desc") return [...boats].sort((a, b) => (b.priceUsd ?? 0) - (a.priceUsd ?? 0));
@@ -47,19 +53,21 @@ export default async function CategoryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sort?: string; q?: string }>;
+  searchParams: Promise<{ sort?: string; q?: string; min?: string; max?: string }>;
 }) {
   const { slug } = await params;
-  const { sort = "", q = "" } = await searchParams;
+  const { sort = "", q = "", min = "", max = "" } = await searchParams;
   const current = decodeURIComponent(slug);
   const heading = categoryLabel(current, "Embarcaciones");
   const basePath = `/category/${slug}`;
 
-  // Sort links preserve the active search.
+  // Sort links preserve the active search and price filters.
   const qs = (sortKey: string) => {
     const p = new URLSearchParams();
     if (sortKey) p.set("sort", sortKey);
     if (q) p.set("q", q);
+    if (min) p.set("min", min);
+    if (max) p.set("max", max);
     const s = p.toString();
     return s ? `?${s}` : "";
   };
@@ -72,7 +80,7 @@ export default async function CategoryPage({
 
       {/* Instant shell — renders without waiting on Wix; the grid below suspends. */}
       <div className="filter-bar" style={{ flexDirection: "column", alignItems: "stretch", gap: "1.1rem" }}>
-        <SearchBox key={basePath} basePath={basePath} sort={sort} q={q} />
+        <SearchBox key={basePath} basePath={basePath} sort={sort} q={q} min={min} max={max} />
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
           <div className="filter-group" style={{ flex: "0 1 auto" }}>
             <label>Bandera</label>
@@ -100,8 +108,8 @@ export default async function CategoryPage({
         </div>
       </div>
 
-      <Suspense key={`${current}:${sort}:${q}`} fallback={<GridSkeleton />}>
-        <Results catSlug={current} backHref={basePath} sort={sort} q={q} />
+      <Suspense key={`${current}:${sort}:${q}:${min}:${max}`} fallback={<GridSkeleton />}>
+        <Results catSlug={current} backHref={basePath} sort={sort} q={q} min={min} max={max} />
       </Suspense>
     </div>
   );
@@ -112,25 +120,42 @@ async function Results({
   backHref,
   sort,
   q,
+  min,
+  max,
 }: {
   catSlug: string;
   backHref: string;
   sort: string;
   q: string;
+  min: string;
+  max: string;
 }) {
   const cat = await getCategoryBySlug(catSlug);
   if (!cat) notFound();
 
   const nq = norm(q.trim());
+  const minN = toNum(min);
+  const maxN = toNum(max);
   const inCategory = await getBoatsInCategory(cat.id);
-  const filtered = nq ? inCategory.filter((b) => norm(b.name).includes(nq)) : inCategory;
-  const boats = sortBoats(filtered, sort);
+
+  // Price bounds exclude boats with an unknown price (priceUsd == null).
+  const boats = sortBoats(
+    inCategory.filter(
+      (b) =>
+        (!nq || norm(b.name).includes(nq)) &&
+        (minN == null || (b.priceUsd != null && b.priceUsd >= minN)) &&
+        (maxN == null || (b.priceUsd != null && b.priceUsd <= maxN)),
+    ),
+    sort,
+  );
+
+  const hasFilter = !!nq || minN != null || maxN != null;
 
   return (
     <>
       <p className="results-count">
         {boats.length} embarcaci{boats.length === 1 ? "ón" : "ones"}
-        {q ? <> para “{q}”</> : <> disponible{boats.length === 1 ? "" : "s"}</>}
+        {q ? <> para “{q}”</> : hasFilter ? <> encontrada{boats.length === 1 ? "" : "s"}</> : <> disponible{boats.length === 1 ? "" : "s"}</>}
       </p>
 
       {boats.length ? (
@@ -144,10 +169,12 @@ async function Results({
           <p>
             {q
               ? `No se encontraron embarcaciones para “${q}”.`
-              : "No hay embarcaciones en esta categoría por ahora."}
+              : hasFilter
+                ? "No se encontraron embarcaciones con esos filtros."
+                : "No hay embarcaciones en esta categoría por ahora."}
           </p>
-          <Link className="btn btn-outline" href={q ? backHref : "/category/all-products"} style={{ marginTop: "1rem" }}>
-            {q ? "Limpiar búsqueda" : "Ver todas"}
+          <Link className="btn btn-outline" href={hasFilter ? backHref : "/category/all-products"} style={{ marginTop: "1rem" }}>
+            {hasFilter ? "Limpiar filtros" : "Ver todas"}
           </Link>
         </div>
       )}
