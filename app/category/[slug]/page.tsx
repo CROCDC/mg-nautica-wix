@@ -5,7 +5,6 @@ import {
   getCategoryBySlug,
   getBoatsInCategory,
   categoryLabel,
-  TYPE_FILTERS,
   FLAG_FILTERS,
   type Boat,
 } from "@/lib/wix";
@@ -38,6 +37,13 @@ function sortBoats(boats: Boat[], sort: string): Boat[] {
   return boats;
 }
 
+// Accent-insensitive name search over real data (just filters, infers nothing).
+const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+function searchBoats(boats: Boat[], q: string): Boat[] {
+  const nq = norm(q.trim());
+  return nq ? boats.filter((b) => norm(b.name).includes(nq)) : boats;
+}
+
 const pill = (active: boolean) => `btn btn-sm ${active ? "btn-navy" : "btn-ghost"}`;
 const pillRow = { display: "flex", gap: ".5rem", flexWrap: "wrap" as const };
 
@@ -46,44 +52,61 @@ export default async function CategoryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sort?: string }>;
+  searchParams: Promise<{ sort?: string; q?: string }>;
 }) {
   const { slug } = await params;
-  const { sort = "" } = await searchParams;
+  const { sort = "", q = "" } = await searchParams;
   const current = decodeURIComponent(slug);
   const cat = await getCategoryBySlug(current);
   if (!cat) notFound();
 
-  const boats = sortBoats(await getBoatsInCategory(cat.id), sort);
+  const inCategory = await getBoatsInCategory(cat.id);
+  const boats = sortBoats(searchBoats(inCategory, q), sort);
   const heading = categoryLabel(cat.slug, cat.name);
+
+  // Build query strings that preserve the active search when switching sort.
+  const qs = (sortKey: string) => {
+    const p = new URLSearchParams();
+    if (sortKey) p.set("sort", sortKey);
+    if (q) p.set("q", q);
+    const s = p.toString();
+    return s ? `?${s}` : "";
+  };
 
   return (
     <div className="container">
       <div className="page-title">
         <h1>{heading}</h1>
         <p>
-          {boats.length} embarcaci{boats.length === 1 ? "ón" : "ones"} disponible
-          {boats.length === 1 ? "" : "s"}
+          {boats.length} embarcaci{boats.length === 1 ? "ón" : "ones"}
+          {q ? <> para “{q}”</> : <> disponible{boats.length === 1 ? "" : "s"}</>}
         </p>
       </div>
 
       <div className="filter-bar">
-        <div className="filter-group">
-          <label>Tipo</label>
-          <div style={pillRow}>
-            <Link href="/category/all-products" className={pill(current === "all-products")}>
-              Todos
-            </Link>
-            {TYPE_FILTERS.map((f) => (
-              <Link key={f.slug} href={`/category/${f.slug}`} className={pill(current === f.slug)}>
-                {f.label}
-              </Link>
-            ))}
+        <form className="filter-group filter-search">
+          <label htmlFor="q">Buscar</label>
+          <div style={{ display: "flex", gap: ".5rem" }}>
+            <input
+              id="q"
+              type="search"
+              name="q"
+              defaultValue={q}
+              placeholder="Nombre del barco…"
+              style={{ flex: 1 }}
+            />
+            {sort ? <input type="hidden" name="sort" value={sort} /> : null}
+            <button type="submit" className="btn btn-sm btn-navy">
+              Buscar
+            </button>
           </div>
-        </div>
+        </form>
         <div className="filter-group">
           <label>Bandera</label>
           <div style={pillRow}>
+            <Link href="/category/all-products" className={pill(current === "all-products")}>
+              Todas
+            </Link>
             {FLAG_FILTERS.map((f) => (
               <Link key={f.slug} href={`/category/${f.slug}`} className={pill(current === f.slug)}>
                 {f.emoji} {f.label}
@@ -95,11 +118,7 @@ export default async function CategoryPage({
           <label>Ordenar</label>
           <div style={pillRow}>
             {SORTS.map((s) => (
-              <Link
-                key={s.key}
-                href={s.key ? `/category/${slug}?sort=${s.key}` : `/category/${slug}`}
-                className={pill(sort === s.key)}
-              >
+              <Link key={s.key} href={`/category/${slug}${qs(s.key)}`} className={pill(sort === s.key)}>
                 {s.label}
               </Link>
             ))}
@@ -115,9 +134,13 @@ export default async function CategoryPage({
         </div>
       ) : (
         <div className="empty">
-          <p>No hay embarcaciones en esta categoría por ahora.</p>
-          <Link className="btn btn-outline" href="/category/all-products" style={{ marginTop: "1rem" }}>
-            Ver todas
+          <p>
+            {q
+              ? `No se encontraron embarcaciones para “${q}”.`
+              : "No hay embarcaciones en esta categoría por ahora."}
+          </p>
+          <Link className="btn btn-outline" href={`/category/${slug}`} style={{ marginTop: "1rem" }}>
+            {q ? "Limpiar búsqueda" : "Ver todas"}
           </Link>
         </div>
       )}

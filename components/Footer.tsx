@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Script from "next/script";
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";
 
@@ -136,6 +137,12 @@ export default function Footer() {
           Escribinos por WhatsApp
         </a>
       </div>
+      {/* Shared Next Tech footer: transparent Web Component, the #060F1E site-footer bg shows through. */}
+      <Script
+        src="https://nexttech.com.ar/static/js/nexttechFooter.js"
+        strategy="afterInteractive"
+      />
+      <nexttech-footer source="mg-nautica"></nexttech-footer>
     </footer>
   );
 }
