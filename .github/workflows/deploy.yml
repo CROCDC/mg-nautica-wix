@@ -1,0 +1,49 @@
+name: Deploy
+
+# GitHub Actions owns the deploy (plan §4.3): PR -> Vercel Preview, main -> Production.
+# Inert until enabled: set repo variable DEPLOY_ENABLED=true and the three secrets
+# VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID. Turn OFF Vercel's own Git deploys
+# for this project so deploys happen only from here.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  deploy:
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+
+      # Quality gate before any deploy.
+      - run: npm run lint
+      - run: npm run typecheck
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      # ── Production (push to main) ──
+      - name: Deploy production
+        if: github.event_name == 'push'
+        run: |
+          vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+          vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # ── Preview (pull request) ──
+      - name: Deploy preview
+        if: github.event_name == 'pull_request'
+        run: |
+          vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+          vercel build --token=${{ secrets.VERCEL_TOKEN }}
+          url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
