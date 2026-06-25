@@ -76,9 +76,14 @@ export default async function ProductPage({
       </nav>
 
       <h1 className="detail-title">{boat.name}</h1>
-      {boat.ribbon ? (
+      {boat.tags.length ? (
         <div className="detail-meta">
-          <span className="detail-chip">{boat.ribbon}</span>
+          {boat.tags.map((t) => (
+            <span key={t.slug} className="detail-chip">
+              {t.emoji ? `${t.emoji} ` : ""}
+              {t.label}
+            </span>
+          ))}
         </div>
       ) : null}
 
@@ -116,6 +121,10 @@ export default async function ProductPage({
                 💬 Contactar por WhatsApp
               </a>
             </div>
+            <p style={{ marginTop: ".85rem", fontSize: ".82rem", color: "var(--muted)", lineHeight: 1.5 }}>
+              Coordinamos visitas y respondemos consultas por WhatsApp. Gestión integral de la
+              compra, trámites y traslado.
+            </p>
           </div>
         </aside>
       </div>

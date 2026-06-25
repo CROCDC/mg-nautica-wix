@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCategories, getCategoryBySlug, getBoatsInCategory, type Boat } from "@/lib/wix";
+import {
+  getCategories,
+  getCategoryBySlug,
+  getBoatsInCategory,
+  categoryLabel,
+  TYPE_FILTERS,
+  FLAG_FILTERS,
+  type Boat,
+} from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 
 export const revalidate = 600;
@@ -12,7 +20,6 @@ export async function generateStaticParams() {
     // Pre-render clean slugs only; emoji slugs render on-demand (dynamicParams default).
     return cats.filter((c) => /^[\p{L}\p{N}-]+$/u.test(c.slug)).map((c) => ({ slug: c.slug }));
   } catch {
-    // No Wix client id at build time (e.g. CI) — render all on-demand instead.
     return [];
   }
 }
@@ -23,13 +30,10 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const cat = await getCategoryBySlug(decodeURIComponent(slug));
-  const title = cat ? title_(cat.name, cat.slug) : "Catálogo";
+  const decoded = decodeURIComponent(slug);
+  const cat = await getCategoryBySlug(decoded);
+  const title = cat ? categoryLabel(cat.slug, cat.name) : "Catálogo";
   return { title, alternates: { canonical: `/category/${slug}` } };
-}
-
-function title_(name: string, slug: string) {
-  return slug === "all-products" ? "Embarcaciones" : name;
 }
 
 const SORTS = [
@@ -44,6 +48,9 @@ function sortBoats(boats: Boat[], sort: string): Boat[] {
   return boats;
 }
 
+const pill = (active: boolean) => `btn btn-sm ${active ? "btn-navy" : "btn-ghost"}`;
+const pillRow = { display: "flex", gap: ".5rem", flexWrap: "wrap" as const };
+
 export default async function CategoryPage({
   params,
   searchParams,
@@ -53,11 +60,12 @@ export default async function CategoryPage({
 }) {
   const { slug } = await params;
   const { sort = "" } = await searchParams;
-  const cat = await getCategoryBySlug(decodeURIComponent(slug));
+  const current = decodeURIComponent(slug);
+  const cat = await getCategoryBySlug(current);
   if (!cat) notFound();
 
   const boats = sortBoats(await getBoatsInCategory(cat.id), sort);
-  const heading = title_(cat.name, cat.slug);
+  const heading = categoryLabel(cat.slug, cat.name);
 
   return (
     <div className="container">
@@ -71,13 +79,36 @@ export default async function CategoryPage({
 
       <div className="filter-bar">
         <div className="filter-group">
+          <label>Tipo</label>
+          <div style={pillRow}>
+            <Link href="/category/all-products" className={pill(current === "all-products")}>
+              Todos
+            </Link>
+            {TYPE_FILTERS.map((f) => (
+              <Link key={f.slug} href={`/category/${f.slug}`} className={pill(current === f.slug)}>
+                {f.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div className="filter-group">
+          <label>Bandera</label>
+          <div style={pillRow}>
+            {FLAG_FILTERS.map((f) => (
+              <Link key={f.slug} href={`/category/${f.slug}`} className={pill(current === f.slug)}>
+                {f.emoji} {f.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+        <div className="filter-group">
           <label>Ordenar</label>
-          <div style={{ display: "flex", gap: ".5rem", flexWrap: "wrap" }}>
+          <div style={pillRow}>
             {SORTS.map((s) => (
               <Link
                 key={s.key}
                 href={s.key ? `/category/${slug}?sort=${s.key}` : `/category/${slug}`}
-                className={`btn btn-sm ${sort === s.key ? "btn-navy" : "btn-ghost"}`}
+                className={pill(sort === s.key)}
               >
                 {s.label}
               </Link>

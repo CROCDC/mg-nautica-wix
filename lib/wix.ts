@@ -27,6 +27,11 @@ function wix() {
 // ── View models ───────────────────────────────────────────────────────────────
 export type BoatImage = { url: string; alt: string; width?: number; height?: number };
 
+// A tag = a real Wix category the boat belongs to, shown with a clean label.
+// NOTHING is inferred from text; this is the owner-set category membership.
+export type TagKind = "type" | "flag" | "region";
+export type BoatTag = { label: string; emoji?: string; kind: TagKind; slug: string };
+
 export type Boat = {
   id: string;
   name: string;
@@ -36,14 +41,47 @@ export type Boat = {
   onSale: boolean;
   mainImage: BoatImage | null;
   images: BoatImage[];
-  ribbon: string | null;
-  /** Ricos rich content (`{ nodes: [...] }`) — the boat specs/description. */
+  /** Real Wix categories (type / flag / region) shown as tags. Never derived from text. */
+  tags: BoatTag[];
+  /** Ricos rich content (`{ nodes: [...] }`) — the boat description (rendered as-is). */
   description: RicosContent | null;
   mainCategoryId: string | null;
   categoryIds: string[];
 };
 
 export type Category = { id: string; name: string; slug: string };
+
+// Clean display labels for the real Wix categories (their dashboard names are
+// emoji-ALLCAPS and the slugs are mislabeled). Keyed by the stable Wix slug.
+const TAG_BY_SLUG: Record<string, Omit<BoatTag, "slug">> = {
+  "⛵️🇦🇷veleros-bs-as-zona-norte-caba": { label: "Veleros", emoji: "⛵", kind: "type" },
+  "emb-vela": { label: "Veleros", emoji: "⛵", kind: "type" },
+  "🇦🇷emb-a-motor": { label: "A motor", emoji: "🛥️", kind: "type" },
+  "emb-motor": { label: "A motor", emoji: "🛥️", kind: "type" },
+  "botas-náuticas": { label: "Argentina", emoji: "🇦🇷", kind: "flag" },
+  "ropa-náutica": { label: "Uruguay", emoji: "🇺🇾", kind: "flag" },
+  "accesorios-a-bordo": { label: "Exterior", emoji: "🌎", kind: "flag" },
+  "buenos-aires-zona-norte-y-caba": { label: "Zona Norte / CABA", kind: "region" },
+  "🇦🇷emb-zona-sur": { label: "Zona Sur", kind: "region" },
+};
+const KIND_ORDER: Record<TagKind, number> = { type: 0, flag: 1, region: 2 };
+
+// Catalog filter pills (real category pages). Heading label per slug too.
+export const TYPE_FILTERS = [
+  { label: "Veleros", slug: "⛵️🇦🇷veleros-bs-as-zona-norte-caba" },
+  { label: "A motor", slug: "🇦🇷emb-a-motor" },
+];
+export const FLAG_FILTERS = [
+  { label: "Argentina", emoji: "🇦🇷", slug: "botas-náuticas" },
+  { label: "Uruguay", emoji: "🇺🇾", slug: "ropa-náutica" },
+  { label: "Exterior", emoji: "🌎", slug: "accesorios-a-bordo" },
+];
+
+export function categoryLabel(slug: string, fallback: string): string {
+  if (slug === "all-products") return "Embarcaciones";
+  const t = TAG_BY_SLUG[slug];
+  return t ? `${t.emoji ? t.emoji + " " : ""}${t.label}` : fallback;
+}
 
 // Ricos node shapes we care about (loose — the renderer is defensive).
 export type RicosNode = {
@@ -100,7 +138,6 @@ function mapBoat(p: WixProduct): Boat {
   const items = p.media?.itemsInfo?.items ?? [];
   const images = items.map((it) => parseWixImage(it.image, name)).filter(Boolean) as BoatImage[];
 
-  const ribbon = p.additionalRibbons?.[0]?.name ?? null;
   const categoryIds = (p.allCategoriesInfo?.categories ?? [])
     .map((c) => c._id ?? c.id)
     .filter((id): id is string => Boolean(id));
@@ -114,11 +151,40 @@ function mapBoat(p: WixProduct): Boat {
     onSale,
     mainImage,
     images: images.length ? images : mainImage ? [mainImage] : [],
-    ribbon,
+    tags: [], // filled by attachTags() once the category index is loaded
     description: (p.description as RicosContent) ?? null,
     mainCategoryId: p.mainCategoryId ?? null,
     categoryIds,
   };
+}
+
+// Resolve each boat's real category membership to clean tags (type → flag → region).
+const getTagIndex = cache(async (): Promise<Map<string, BoatTag>> => {
+  const cats = await getCategories();
+  const index = new Map<string, BoatTag>();
+  for (const c of cats) {
+    const t = TAG_BY_SLUG[c.slug];
+    if (t) index.set(c.id, { ...t, slug: c.slug });
+  }
+  return index;
+});
+
+async function attachTags(boats: Boat[]): Promise<Boat[]> {
+  const index = await getTagIndex();
+  for (const boat of boats) {
+    const seen = new Set<string>();
+    const tags: BoatTag[] = [];
+    for (const id of boat.categoryIds) {
+      const t = index.get(id);
+      if (t && !seen.has(t.label)) {
+        seen.add(t.label);
+        tags.push(t);
+      }
+    }
+    tags.sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
+    boat.tags = tags;
+  }
+  return boats;
 }
 
 // High-ticket boats are priced in round USD thousands — show "US$ 750,000".
@@ -147,7 +213,8 @@ export const getAllBoats = cache(async (): Promise<Boat[]> => {
     .productsV3.queryProducts({ fields: ["ALL_CATEGORIES_INFO"] })
     .limit(100)
     .find();
-  return res.items.map((p) => mapBoat(p as unknown as WixProduct));
+  const boats = res.items.map((p) => mapBoat(p as unknown as WixProduct));
+  return attachTags(boats);
 });
 
 export const getBoatBySlug = cache(async (slug: string): Promise<Boat | null> => {
@@ -156,7 +223,9 @@ export const getBoatBySlug = cache(async (slug: string): Promise<Boat | null> =>
       fields: ["DESCRIPTION", "MEDIA_ITEMS_INFO", "ALL_CATEGORIES_INFO"],
     });
     const product = ((res as { product?: unknown }).product ?? res) as WixProduct;
-    return product?._id ? mapBoat(product) : null;
+    if (!product?._id) return null;
+    const [boat] = await attachTags([mapBoat(product)]);
+    return boat;
   } catch {
     return null;
   }
