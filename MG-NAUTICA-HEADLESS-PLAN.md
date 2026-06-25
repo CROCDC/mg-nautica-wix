@@ -61,7 +61,7 @@ The project **lives on GitHub** and ships through an **automated deploy pipeline
 "build on my laptop and upload" — every change goes repo → CI gate → deploy.
 
 ### 4.1 Repository
-- **Host:** GitHub. Repo name: `mg-nautica-wix` (same as the local folder). **Visibility: public** (decided).
+- **Host:** GitHub. Repo: **https://github.com/CROCDC/mg-nautica-wix** (public, default branch `main`).
   Secrets never live in the repo — they stay in Vercel / GitHub Actions secret stores (§4.4).
 - **Default branch:** `main` = **production**. Work happens on feature branches → Pull Request.
 - **Branch protection on `main`:** require the CI checks to pass before merge; no direct pushes.
@@ -208,11 +208,11 @@ This removes the most complex/uncertain piece from the critical path.
 
 - [ ] **Phase 0 — Validate (read-only POC):** create OAuth app / API key, list the 71 real
       products via `@wix/sdk`. Confirm specs storage + whether checkout is needed.
-- [ ] **Phase 1 — Scaffold + repo + pipeline:** Next.js + TS, Wix SDK client, env/secrets,
-      `next/image` remote patterns for `static.wixstatic.com`. **Init GitHub repo, branch
-      protection on `main`, GitHub Actions CI (lint/typecheck/build), connect Vercel project
-      (§4).** Copy `mg-nautica-web/app/static/` → `public/` and wire `main.css` as the global
-      stylesheet. First "hello world" deploy proves the pipeline end-to-end.
+- [x] **Phase 1 — Scaffold + repo + pipeline:** ✅ Next.js 16 + React 19 + TS scaffold, Wix SDK
+      client (`lib/wix.ts`), `next/image` remote patterns for `static.wixstatic.com`, ported
+      `main.css` + nav/footer + home hero + client JS from `mg-nautica-web`. GitHub repo created,
+      **CI green** (lint/typecheck/build on Actions). **Pending sub-steps:** branch protection on
+      `main`; enable deploy (set `DEPLOY_ENABLED=true` + Vercel secrets); first Preview/Prod deploy.
 - [ ] **Phase 2 — Catalog + Product detail:** port `boats/list.html` → `/category/[slug]` and
       `boats/detail.html` → `/product-page/[slug]` (fixes the blank page), fed by Wix data. WhatsApp CTA.
 - [ ] **Phase 3 — Home + static pages + nav/footer** (port `home.html`, `base.html`, static templates).
