@@ -243,8 +243,10 @@ This removes the most complex/uncertain piece from the critical path.
       `main.css` + nav/footer + home hero + client JS from `mg-nautica-web`. GitHub repo created,
       **CI green** (lint/typecheck/build on Actions). **Pending sub-steps:** branch protection on
       `main`; enable deploy (set `DEPLOY_ENABLED=true` + Vercel secrets); first Preview/Prod deploy.
-- [ ] **Phase 2 — Catalog + Product detail:** port `boats/list.html` → `/category/[slug]` and
-      `boats/detail.html` → `/product-page/[slug]` (fixes the blank page), fed by Wix data. WhatsApp CTA.
+- [x] **Phase 2 — Catalog + Product detail:** ✅ `/category/[slug]` (grid + sort, category-filtered)
+      and `/product-page/[slug]` (gallery+lightbox, Ricos description, price/compare-at, WhatsApp CTA)
+      fed by Wix Stores V3. 63 product pages prerendered (ISR 10m). Data layer in `lib/wix.ts`
+      (wix:image→CDN, Ricos renderer). Build/lint/typecheck green; CI green. **The blank page is fixed.**
 - [ ] **Phase 3 — Home + static pages + nav/footer** (port `home.html`, `base.html`, static templates).
 - [ ] **Phase 4 — (optional) Cart + Wix-hosted checkout.**
 - [ ] **Phase 5 — SEO:** metadata, sitemap, OG, Product schema, ISR.
