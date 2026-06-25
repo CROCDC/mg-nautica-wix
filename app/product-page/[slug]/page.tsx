@@ -1,30 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import {
-  getAllBoats,
-  getBoatBySlug,
-  formatUsd,
-  ricosToPlainText,
-} from "@/lib/wix";
+import { getBoatBySlug, formatUsd, ricosToPlainText } from "@/lib/wix";
 import Gallery from "@/components/Gallery";
 import RichText from "@/components/RichText";
 
-export const revalidate = 600;
+// Always fetch the latest from Wix on every request (no caching).
+export const dynamic = "force-dynamic";
 
 const WHATSAPP = "5491126949628";
-
-export async function generateStaticParams() {
-  try {
-    const boats = await getAllBoats();
-    return boats
-      .filter((b) => /^[\p{L}\p{N}-]+$/u.test(b.slug))
-      .map((b) => ({ slug: b.slug }));
-  } catch {
-    // No Wix client id at build time (e.g. CI) — render all on-demand instead.
-    return [];
-  }
-}
 
 export async function generateMetadata({
   params,

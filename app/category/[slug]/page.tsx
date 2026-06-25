@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
-  getCategories,
   getCategoryBySlug,
   getBoatsInCategory,
   categoryLabel,
@@ -12,17 +11,8 @@ import {
 } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 
-export const revalidate = 600;
-
-export async function generateStaticParams() {
-  try {
-    const cats = await getCategories();
-    // Pre-render clean slugs only; emoji slugs render on-demand (dynamicParams default).
-    return cats.filter((c) => /^[\p{L}\p{N}-]+$/u.test(c.slug)).map((c) => ({ slug: c.slug }));
-  } catch {
-    return [];
-  }
-}
+// Always fetch the latest from Wix on every request (no caching).
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,

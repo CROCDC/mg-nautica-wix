@@ -3,7 +3,8 @@ import Image from "next/image";
 import { getAllBoats, type Boat } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 
-export const revalidate = 600;
+// Always fetch the latest catalog from Wix on every request (no caching).
+export const dynamic = "force-dynamic";
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";
 
