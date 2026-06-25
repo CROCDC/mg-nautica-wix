@@ -32,9 +32,9 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
-      # ── Production (push to main) ──
+      # ── Production (push to main, or manual run) ──
       - name: Deploy production
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
           vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
