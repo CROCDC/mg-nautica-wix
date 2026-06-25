@@ -287,6 +287,12 @@ secrets: WIX_CLIENT_ID (public), WIX_API_KEY (server only), VERCEL_TOKEN/ORG_ID/
   owner-set data: name, price (+ sale), images, the description as-is, and **real category
   membership** — the latter refills the design's slots (type/flag/region tags, catalog filters,
   detail chips) honestly. The structured spec-blocks stay removed; the description carries detail.
+- **Data freshness — always live (owner's directive).** The storefront must always show the
+  latest Wix catalog (new/edited/sold boats, price changes) with no staleness. The Wix-backed
+  pages (home, `/category/[slug]`, `/product-page/[slug]`) are `dynamic = "force-dynamic"` —
+  they hit Wix on **every request**. We accept the per-load Wix call / latency for freshness.
+  (Static pages with no Wix data stay static.) Future speed-up without losing freshness, if ever
+  wanted: keep cached pages + a Wix product-change **webhook → `revalidateTag`** for instant invalidation.
 - Owner keeps the Wix dashboard workflow (✅), but **loses the Wix visual editor** for the
   storefront — layout changes are now code.
 - Checkout (if used) still routes through Wix's hosted page.
