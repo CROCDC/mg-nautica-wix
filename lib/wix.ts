@@ -124,9 +124,24 @@ type WixProduct = {
   additionalRibbons?: { name?: string }[];
   allCategoriesInfo?: { categories?: { _id?: string; id?: string }[] };
   description?: RicosContent;
+  plainDescription?: string;
   mainCategoryId?: string;
 };
 type WixCategory = { _id: string; name?: string; slug?: string };
+
+// Build a minimal Ricos doc from plain text (accessories store plainDescription).
+function ricosFromPlain(text: string): RicosContent {
+  return {
+    nodes: text
+      .split(/\n+/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map((line) => ({
+        type: "PARAGRAPH",
+        nodes: [{ type: "TEXT", textData: { text: line, decorations: [] } }],
+      })),
+  };
+}
 
 function mapBoat(p: WixProduct): Boat {
   const name = (p.name ?? "").trim();
@@ -152,7 +167,12 @@ function mapBoat(p: WixProduct): Boat {
     mainImage,
     images: images.length ? images : mainImage ? [mainImage] : [],
     tags: [], // filled by attachTags() once the category index is loaded
-    description: (p.description as RicosContent) ?? null,
+    description:
+      p.description?.nodes?.length
+        ? p.description
+        : p.plainDescription
+          ? ricosFromPlain(p.plainDescription)
+          : null,
     mainCategoryId: p.mainCategoryId ?? null,
     categoryIds,
   };
@@ -207,20 +227,35 @@ export function ricosToPlainText(content: RicosContent | null, max = 200): strin
 }
 
 // ── Queries (cached per request) ─────────────────────────────────────────────────
-// Only 63 public products: fetch all once with category info, filter/sort in memory.
-export const getAllBoats = cache(async (): Promise<Boat[]> => {
+// Nautical accessories live in their own Wix category; they are NOT boats and must
+// not appear in the boat catalog/home. We split the catalog by this category id.
+const ACCESSORIES_CATEGORY_ID = "d04bf312-4a2c-40ea-aefa-761af33fbbdb";
+
+const fetchAllProducts = cache(async (): Promise<Boat[]> => {
   const res = await wix()
     .productsV3.queryProducts({ fields: ["ALL_CATEGORIES_INFO"] })
     .limit(100)
     .find();
-  const boats = res.items.map((p) => mapBoat(p as unknown as WixProduct));
+  return res.items.map((p) => mapBoat(p as unknown as WixProduct));
+});
+
+// Boats = every product EXCEPT the ones in the accessories category.
+export const getAllBoats = cache(async (): Promise<Boat[]> => {
+  const all = await fetchAllProducts();
+  const boats = all.filter((b) => !b.categoryIds.includes(ACCESSORIES_CATEGORY_ID));
   return attachTags(boats);
+});
+
+// Accessories = products in the accessories category (no flag/type tags).
+export const getAccessories = cache(async (): Promise<Boat[]> => {
+  const all = await fetchAllProducts();
+  return all.filter((b) => b.categoryIds.includes(ACCESSORIES_CATEGORY_ID));
 });
 
 export const getBoatBySlug = cache(async (slug: string): Promise<Boat | null> => {
   try {
     const res = await wix().productsV3.getProductBySlug(slug, {
-      fields: ["DESCRIPTION", "MEDIA_ITEMS_INFO", "ALL_CATEGORIES_INFO"],
+      fields: ["DESCRIPTION", "PLAIN_DESCRIPTION", "MEDIA_ITEMS_INFO", "ALL_CATEGORIES_INFO"],
     });
     const product = ((res as { product?: unknown }).product ?? res) as WixProduct;
     if (!product?._id) return null;

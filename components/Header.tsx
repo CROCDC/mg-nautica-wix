@@ -4,6 +4,7 @@ import Image from "next/image";
 // Provisional routes — mirror the Wix URLs (/category/<slug>) and are finalized in Phase 3.
 const NAV = [
   { href: "/category/all-products", label: "Embarcaciones" },
+  { href: "/accesorios", label: "Accesorios" },
   { href: "/servicios", label: "Servicios" },
   { href: "/vender-tu-embarcacion", label: "Vendé tu embarcación" },
   { href: "/quienes-somos", label: "Quiénes somos" },
