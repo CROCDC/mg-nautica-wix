@@ -25,7 +25,8 @@ function wix() {
 }
 
 // ── View models ───────────────────────────────────────────────────────────────
-export type BoatImage = { url: string; alt: string; width?: number; height?: number };
+import type { BoatImage } from "./wix-image";
+export type { BoatImage };
 
 // A tag = a real Wix category the boat belongs to, shown with a clean label.
 // NOTHING is inferred from text; this is the owner-set category membership.

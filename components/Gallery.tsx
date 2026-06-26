@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
-import type { BoatImage } from "@/lib/wix";
+import { type BoatImage, wixImageUrl } from "@/lib/wix-image";
 
 export default function Gallery({ images }: { images: BoatImage[] }) {
   const [idx, setIdx] = useState(0);
@@ -32,10 +32,11 @@ export default function Gallery({ images }: { images: BoatImage[] }) {
     <div className="gallery">
       <div className="gallery-main" onClick={() => setLightbox(true)}>
         <Image
-          src={current.url}
+          src={wixImageUrl(current, 1200, 800, { q: 82 })}
           alt={current.alt}
           fill
           priority
+          unoptimized
           sizes="(max-width: 980px) 100vw, 760px"
           style={{ objectFit: "cover" }}
         />
@@ -68,7 +69,14 @@ export default function Gallery({ images }: { images: BoatImage[] }) {
               style={{ position: "relative" }}
               onClick={() => setIdx(i)}
             >
-              <Image src={img.url} alt="" fill sizes="90px" style={{ objectFit: "cover" }} />
+              <Image
+                src={wixImageUrl(img, 180, 180, { q: 70 })}
+                alt=""
+                fill
+                unoptimized
+                sizes="90px"
+                style={{ objectFit: "cover" }}
+              />
             </div>
           ))}
         </div>
@@ -88,8 +96,13 @@ export default function Gallery({ images }: { images: BoatImage[] }) {
               ‹
             </button>
           )}
-          {/* eslint-disable-next-line @next/next/no-img-element -- full-size lightbox, optimization not needed */}
-          <img className="lb-img" src={current.url} alt={current.alt} onClick={(e) => e.stopPropagation()} />
+          {/* eslint-disable-next-line @next/next/no-img-element -- Wix-CDN-sized, off Vercel's transform quota */}
+          <img
+            className="lb-img"
+            src={wixImageUrl(current, 1600, 1600, { mode: "fit", q: 85 })}
+            alt={current.alt}
+            onClick={(e) => e.stopPropagation()}
+          />
           {count > 1 && (
             <button
               className="lb-arrow next"

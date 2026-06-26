@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { type Boat, formatUsd } from "@/lib/wix";
+import { wixImageUrl } from "@/lib/wix-image";
 
 export default function BoatCard({ boat }: { boat: Boat }) {
   const typeTag = boat.tags.find((t) => t.kind === "type");
@@ -11,9 +12,10 @@ export default function BoatCard({ boat }: { boat: Boat }) {
       <div className="boat-card-img">
         {boat.mainImage ? (
           <Image
-            src={boat.mainImage.url}
+            src={wixImageUrl(boat.mainImage, 760, 520)}
             alt={boat.mainImage.alt}
             fill
+            unoptimized
             sizes="(max-width: 700px) 100vw, 380px"
             style={{ objectFit: "cover" }}
           />
