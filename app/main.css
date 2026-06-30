@@ -159,9 +159,7 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 /* ── Brand logo ── */
 .brand { display: inline-flex; align-items: center; gap: .6rem; }
 .brand-logo {
-  width: 36px; height: 36px; object-fit: contain;
-  border-radius: 50%;
-  background: rgba(255,255,255,.05);
+  height: 40px; width: auto; object-fit: contain;
 }
 
 /* ── Photo collage (about page) ── */

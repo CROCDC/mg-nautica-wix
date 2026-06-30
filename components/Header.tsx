@@ -23,8 +23,8 @@ export default function Header() {
             src="/site/logo-mg-nautica.png"
             alt=""
             className="brand-logo"
-            width={44}
-            height={44}
+            width={70}
+            height={40}
           />
           MG <span>Náutica</span>
         </Link>
