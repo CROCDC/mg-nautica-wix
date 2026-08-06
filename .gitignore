@@ -12,6 +12,12 @@
 
 # testing
 /coverage
+# Playwright run output. tests/screenshots/ is NOT ignored — it is the committed
+# visual baseline the responsive suite regenerates.
+/test-results/
+/playwright-report/
+/blob-report/
+/.playwright
 
 # next.js
 /.next/

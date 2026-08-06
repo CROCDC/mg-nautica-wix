@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.tests.json",
+    "test": "next build && playwright test --project=mocked",
+    "test:live": "next build && LIVE=1 playwright test --project=live",
+    "test:record": "next build && node tests/mock/record.mjs"
   },
   "dependencies": {
     "@wix/categories": "^1.0.202",
@@ -20,6 +23,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

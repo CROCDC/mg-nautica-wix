@@ -8,6 +8,7 @@ import {
   categoryLabel,
   FLAG_FILTERS,
   type Boat,
+  type Category,
 } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 import SearchBox from "@/components/SearchBox";
@@ -61,6 +62,12 @@ export default async function CategoryPage({
   const heading = categoryLabel(current, "Embarcaciones");
   const basePath = `/category/${slug}`;
 
+  // The category has to resolve BEFORE anything renders: notFound() from inside the
+  // streamed <Results> fires after the 200 is already on the wire, so crawlers would get
+  // a soft 404 for a category that does not exist.
+  const category = await getCategoryBySlug(current);
+  if (!category) notFound();
+
   // Sort links preserve the active search and price filters.
   const qs = (sortKey: string) => {
     const p = new URLSearchParams();
@@ -78,8 +85,14 @@ export default async function CategoryPage({
         <h1>{heading}</h1>
       </div>
 
-      {/* Instant shell — renders without waiting on Wix; the grid below suspends. */}
-      <div className="filter-bar" style={{ flexDirection: "column", alignItems: "stretch", gap: "1.1rem" }}>
+      {/* Shell renders as soon as the category resolves; the catalog grid below suspends. */}
+      {/* nowrap goes with the column override: .filter-bar wraps for its row layout,
+          and a wrapping column flex container sizes each line to its content — which
+          pushed the filters past the viewport on mobile instead of fitting it. */}
+      <div
+        className="filter-bar"
+        style={{ flexDirection: "column", flexWrap: "nowrap", alignItems: "stretch", gap: "1.1rem" }}
+      >
         <SearchBox key={basePath} basePath={basePath} sort={sort} q={q} min={min} max={max} />
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
           <div className="filter-group" style={{ flex: "0 1 auto" }}>
@@ -109,34 +122,31 @@ export default async function CategoryPage({
       </div>
 
       <Suspense key={`${current}:${sort}:${q}:${min}:${max}`} fallback={<GridSkeleton />}>
-        <Results catSlug={current} backHref={basePath} sort={sort} q={q} min={min} max={max} />
+        <Results category={category} backHref={basePath} sort={sort} q={q} min={min} max={max} />
       </Suspense>
     </div>
   );
 }
 
 async function Results({
-  catSlug,
+  category,
   backHref,
   sort,
   q,
   min,
   max,
 }: {
-  catSlug: string;
+  category: Category;
   backHref: string;
   sort: string;
   q: string;
   min: string;
   max: string;
 }) {
-  const cat = await getCategoryBySlug(catSlug);
-  if (!cat) notFound();
-
   const nq = norm(q.trim());
   const minN = toNum(min);
   const maxN = toNum(max);
-  const inCategory = await getBoatsInCategory(cat.id);
+  const inCategory = await getBoatsInCategory(category.id);
 
   // Price bounds exclude boats with an unknown price (priceUsd == null).
   const boats = sortBoats(

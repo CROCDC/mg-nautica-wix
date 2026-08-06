@@ -1,0 +1,19 @@
+{
+  // The test suite is typechecked separately from the app so a production build can
+  // never fail on test tooling (Vercel installs devDependencies, but a --production
+  // install would not). `npm run typecheck` runs both projects.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    // `paths` replaces rather than merges with the base config, so "@/*" is repeated.
+    // "server-only" is a Next bundler marker with no standalone package on disk; the
+    // alias lets the unit tests import lib/wix.ts without touching the app's config.
+    "paths": {
+      "@/*": ["./*"],
+      "server-only": ["./tests/stubs/server-only.ts"]
+    }
+  },
+  "include": ["tests/**/*.ts", "playwright.config.ts"],
+  "exclude": ["node_modules"]
+}
