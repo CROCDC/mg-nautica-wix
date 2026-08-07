@@ -10,7 +10,7 @@ There is no database and no authenticated area here, so the layers are:
 | E2E | `e2e-catalog.spec.ts`, `e2e-filters.spec.ts`, `e2e-product.spec.ts`, `e2e-navigation.spec.ts` | Every user-facing flow |
 | HTTP | `routes.spec.ts` | Status codes, legacy redirects, robots.txt, the edge middleware |
 | Metadata | `metadata.spec.ts` | Titles, canonicals, Open Graph — the invisible failures |
-| Unit | `unit/wix-mapping.spec.ts` | The pure mapping/formatting logic in `lib/` |
+| Unit | `unit/wix-mapping.spec.ts`, `unit/boat-type.spec.ts` | The pure mapping/formatting logic in `lib/` |
 | Live smoke | `live/wix-contract.spec.ts` | That the real Wix API contract still holds |
 
 `helpers/` holds shared non-spec code (Playwright only collects `*.spec.ts`).
@@ -22,6 +22,17 @@ it is invisible to a happy-path test: Enter-to-submit goes through the same `onS
 the button but is the path people actually use; `toNum` treats `0`, `-5` and `abc` as
 "no bound"; the `✕` button keys off live field state, not the URL; `SearchBox` is keyed
 by `basePath` so switching category resets it. Each of those is a branch with its own test.
+
+The **type** filter adds two of its own. Its pills are server-rendered `<Link>`s, so the
+whole filter state has to be baked into every href — while the `✕` that clears them lives
+in the client form and owns none of it. And the types come from the listing *name*, since
+Wix has no crucero category: `lib/boat-type.ts` classifies, and the names that carry two
+type words (`VELERO CP 26 (CRUCERO)`, `MOTOVELERO`, and the catamarans, which have no pill
+of their own) are pinned in `unit/boat-type.spec.ts`.
+
+One of the phone tests asserts the four type pills share a single line. That is a layout
+budget, not a nicety: a fifth pill (`Catamarán`) wrapped the row and cost 47px of a 667px
+screen, which is why catamarans were folded into Velero.
 
 **Anything below 768px.** The nav collapses entirely behind the burger (`.nav-links` is
 `display: none` until `.open`), and the filter bar re-flows. A desktop-only suite cannot

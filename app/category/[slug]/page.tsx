@@ -10,6 +10,7 @@ import {
   type Boat,
   type Category,
 } from "@/lib/wix";
+import { BOAT_TYPES, parseBoatType, type BoatType } from "@/lib/boat-type";
 import BoatCard from "@/components/BoatCard";
 import SearchBox from "@/components/SearchBox";
 
@@ -33,7 +34,6 @@ const SORTS = [
 ];
 
 const pill = (active: boolean) => `btn btn-sm ${active ? "btn-navy" : "btn-ghost"}`;
-const pillRow = { display: "flex", gap: ".5rem", flexWrap: "wrap" as const };
 
 const norm = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -54,10 +54,13 @@ export default async function CategoryPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sort?: string; q?: string; min?: string; max?: string }>;
+  searchParams: Promise<{ sort?: string; q?: string; min?: string; max?: string; type?: string }>;
 }) {
   const { slug } = await params;
-  const { sort = "", q = "", min = "", max = "" } = await searchParams;
+  const { sort = "", q = "", min = "", max = "", type } = await searchParams;
+  // Validated once, then used everywhere: an unknown type must not survive into the pill
+  // links, which would spread it across every control on the bar.
+  const boatType = parseBoatType(type);
   const current = decodeURIComponent(slug);
   const heading = categoryLabel(current, "Embarcaciones");
   const basePath = `/category/${slug}`;
@@ -68,13 +71,17 @@ export default async function CategoryPage({
   const category = await getCategoryBySlug(current);
   if (!category) notFound();
 
-  // Sort links preserve the active search and price filters.
-  const qs = (sortKey: string) => {
+  // Every pill row keeps the whole active state and overrides only its own key, so
+  // picking a type never drops the search and sorting never drops the type.
+  const qs = (over: { sort?: string; type?: BoatType | null } = {}) => {
     const p = new URLSearchParams();
-    if (sortKey) p.set("sort", sortKey);
+    const nextSort = over.sort ?? sort;
+    const nextType = over.type === undefined ? boatType : over.type;
+    if (nextSort) p.set("sort", nextSort);
     if (q) p.set("q", q);
     if (min) p.set("min", min);
     if (max) p.set("max", max);
+    if (nextType) p.set("type", nextType);
     const s = p.toString();
     return s ? `?${s}` : "";
   };
@@ -93,11 +100,36 @@ export default async function CategoryPage({
         className="filter-bar"
         style={{ flexDirection: "column", flexWrap: "nowrap", alignItems: "stretch", gap: "1.1rem" }}
       >
-        <SearchBox key={basePath} basePath={basePath} sort={sort} q={q} min={min} max={max} />
+        <SearchBox
+          key={basePath}
+          basePath={basePath}
+          sort={sort}
+          q={q}
+          min={min}
+          max={max}
+          type={boatType ?? ""}
+        />
         <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
           <div className="filter-group" style={{ flex: "0 1 auto" }}>
+            <label>Tipo</label>
+            <div className="pill-row">
+              <Link href={`${basePath}${qs({ type: null })}`} className={pill(!boatType)}>
+                Todos
+              </Link>
+              {BOAT_TYPES.map((t) => (
+                <Link
+                  key={t.value}
+                  href={`${basePath}${qs({ type: t.value })}`}
+                  className={pill(boatType === t.value)}
+                >
+                  {t.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div className="filter-group" style={{ flex: "0 1 auto" }}>
             <label>Bandera</label>
-            <div style={pillRow}>
+            <div className="pill-row">
               <Link href="/category/all-products" className={pill(current === "all-products")}>
                 Todas
               </Link>
@@ -110,9 +142,13 @@ export default async function CategoryPage({
           </div>
           <div className="filter-group" style={{ flex: "0 1 auto" }}>
             <label>Ordenar</label>
-            <div style={pillRow}>
+            <div className="pill-row">
               {SORTS.map((s) => (
-                <Link key={s.key} href={`${basePath}${qs(s.key)}`} className={pill(sort === s.key)}>
+                <Link
+                  key={s.key}
+                  href={`${basePath}${qs({ sort: s.key })}`}
+                  className={pill(sort === s.key)}
+                >
                   {s.label}
                 </Link>
               ))}
@@ -121,8 +157,16 @@ export default async function CategoryPage({
         </div>
       </div>
 
-      <Suspense key={`${current}:${sort}:${q}:${min}:${max}`} fallback={<GridSkeleton />}>
-        <Results category={category} backHref={basePath} sort={sort} q={q} min={min} max={max} />
+      <Suspense key={`${current}:${sort}:${q}:${min}:${max}:${boatType}`} fallback={<GridSkeleton />}>
+        <Results
+          category={category}
+          backHref={basePath}
+          sort={sort}
+          q={q}
+          min={min}
+          max={max}
+          type={boatType}
+        />
       </Suspense>
     </div>
   );
@@ -135,6 +179,7 @@ async function Results({
   q,
   min,
   max,
+  type,
 }: {
   category: Category;
   backHref: string;
@@ -142,24 +187,27 @@ async function Results({
   q: string;
   min: string;
   max: string;
+  type: BoatType | null;
 }) {
   const nq = norm(q.trim());
   const minN = toNum(min);
   const maxN = toNum(max);
   const inCategory = await getBoatsInCategory(category.id);
 
-  // Price bounds exclude boats with an unknown price (priceUsd == null).
+  // Price bounds exclude boats with an unknown price (priceUsd == null); the type filter
+  // likewise excludes the boats whose type could not be resolved (boatType == null).
   const boats = sortBoats(
     inCategory.filter(
       (b) =>
         (!nq || norm(b.name).includes(nq)) &&
         (minN == null || (b.priceUsd != null && b.priceUsd >= minN)) &&
-        (maxN == null || (b.priceUsd != null && b.priceUsd <= maxN)),
+        (maxN == null || (b.priceUsd != null && b.priceUsd <= maxN)) &&
+        (type == null || b.boatType === type),
     ),
     sort,
   );
 
-  const hasFilter = !!nq || minN != null || maxN != null;
+  const hasFilter = !!nq || minN != null || maxN != null || type != null;
 
   return (
     <>

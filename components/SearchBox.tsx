@@ -12,12 +12,15 @@ export default function SearchBox({
   q,
   min,
   max,
+  type,
 }: {
   basePath: string;
   sort: string;
   q: string;
   min: string;
   max: string;
+  /** Not edited here — the type pills own it. Read so ✕ knows there is one to clear. */
+  type: string;
 }) {
   const router = useRouter();
   const [value, setValue] = useState(q);
@@ -31,6 +34,7 @@ export default function SearchBox({
     if (next.q) p.set("q", next.q);
     if (next.min) p.set("min", next.min);
     if (next.max) p.set("max", next.max);
+    if (type) p.set("type", type);
     const s = p.toString();
     router.push(`${basePath}${s ? `?${s}` : ""}`);
   }
@@ -40,7 +44,7 @@ export default function SearchBox({
     push({ q: value.trim(), min: minV.trim(), max: maxV.trim() });
   }
 
-  const hasFilters = value || minV || maxV;
+  const hasFilters = value || minV || maxV || type;
 
   return (
     <form className="filter-group filter-search" onSubmit={submit} style={{ gap: ".9rem" }}>

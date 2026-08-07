@@ -259,6 +259,7 @@ h3 { font-size: 1.2rem; font-weight: 600; }
   transition: border-color var(--transition);
 }
 .filter-group input:focus, .filter-group select:focus { outline: none; border-color: var(--navy); }
+.pill-row { display: flex; gap: .5rem; flex-wrap: wrap; }
 .filter-actions { display: flex; gap: .5rem; align-items: flex-end; }
 .filter-search { flex: 2; min-width: 200px; }
 
@@ -634,6 +635,10 @@ nexttech-footer { display: block; background: #060F1E; padding: .75rem 0; }
   .btn { white-space: normal; text-align: center; }
   .filter-bar { flex-direction: column; }
   .filter-group { min-width: 100%; }
+  /* Buys the ~42px that keeps the four type pills on one line at 375px. Every pill row
+     is tightened, not just that one, so the bar stays visually consistent. */
+  .pill-row { gap: .4rem; }
+  .pill-row .btn-sm { padding: .4rem .55rem; }
   .filter-actions { width: 100%; }
   .filter-actions .btn { flex: 1; justify-content: center; }
   .footer-grid { grid-template-columns: 1fr; }

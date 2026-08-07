@@ -26,6 +26,7 @@ function wix() {
 
 // ── View models ───────────────────────────────────────────────────────────────
 import type { BoatImage } from "./wix-image";
+import { boatTypeFromName, type BoatType } from "./boat-type";
 export type { BoatImage };
 
 // A tag = a real Wix category the boat belongs to, shown with a clean label.
@@ -44,6 +45,8 @@ export type Boat = {
   images: BoatImage[];
   /** Real Wix categories (type / flag / region) shown as tags. Never derived from text. */
   tags: BoatTag[];
+  /** Catalog `?type=` filter. Read off the name, unlike `tags` — see lib/boat-type.ts. */
+  boatType: BoatType | null;
   /** Ricos rich content (`{ nodes: [...] }`) — the boat description (rendered as-is). */
   description: RicosContent | null;
   mainCategoryId: string | null;
@@ -68,10 +71,6 @@ const TAG_BY_SLUG: Record<string, Omit<BoatTag, "slug">> = {
 const KIND_ORDER: Record<TagKind, number> = { type: 0, flag: 1, region: 2 };
 
 // Catalog filter pills (real category pages). Heading label per slug too.
-export const TYPE_FILTERS = [
-  { label: "Veleros", slug: "⛵️🇦🇷veleros-bs-as-zona-norte-caba" },
-  { label: "A motor", slug: "🇦🇷emb-a-motor" },
-];
 export const FLAG_FILTERS = [
   { label: "Argentina", emoji: "🇦🇷", slug: "botas-náuticas" },
   { label: "Uruguay", emoji: "🇺🇾", slug: "ropa-náutica" },
@@ -168,6 +167,7 @@ function mapBoat(p: WixProduct): Boat {
     mainImage,
     images: images.length ? images : mainImage ? [mainImage] : [],
     tags: [], // filled by attachTags() once the category index is loaded
+    boatType: boatTypeFromName(name),
     description:
       p.description?.nodes?.length
         ? p.description
@@ -204,6 +204,13 @@ async function attachTags(boats: Boat[]): Promise<Boat[]> {
     }
     tags.sort((a, b) => KIND_ORDER[a.kind] - KIND_ORDER[b.kind]);
     boat.tags = tags;
+
+    // Fallback for the boats whose name says nothing. Only the Veleros category can
+    // promote: "A motor" spans crucero, lancha and moto de agua, so it picks nothing.
+    // The name still wins — a catamaran is filed under Veleros in the Wix dashboard.
+    if (!boat.boatType && tags.some((t) => t.kind === "type" && t.label === "Veleros")) {
+      boat.boatType = "velero";
+    }
   }
   return boats;
 }
