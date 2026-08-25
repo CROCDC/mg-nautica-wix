@@ -4,10 +4,31 @@ import Link from "next/link";
 export const metadata: Metadata = {
   title: "Servicios",
   description:
-    "Gestión de corretaje, mantenimiento técnico, traslados y asesoría integral en Argentina y Uruguay.",
+    "Gestión de corretaje, trámite AIS (alta ISMM / MMSI ante ENACOM), mantenimiento técnico, traslados y asesoría integral en Argentina y Uruguay.",
 };
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";
+const AIS_WHATSAPP_URL =
+  "https://wa.me/5491126949628?text=" +
+  encodeURIComponent("Hola! Quiero hacer el trámite de AIS (alta ISMM / MMSI). ¿Me asesoran?");
+
+// Alta ISMM / MMSI ante ENACOM: lo que resolvemos en el trámite, tal como se comunica
+// en la campaña impresa.
+const AIS_STEPS = [
+  "Gestión completa de alta ISMM / MMSI ante ENACOM",
+  "Alta y carga de todos los equipos: VHF, AIS, GPS, EPIRB, etc.",
+  "Asesoramiento personalizado y paso a paso",
+  "Carga correcta de datos técnicos y documentación",
+  "Seguimiento del trámite hasta su aprobación",
+  "Ahorro de tiempo, sin errores ni rechazos",
+];
+
+const AIS_PILLARS = [
+  { icon: "⚓", title: "Experiencia", body: "en trámites náuticos" },
+  { icon: "🛡️", title: "Seguridad", body: "y confianza garantizada" },
+  { icon: "⏱️", title: "Rapidez", body: "y eficiencia en cada paso" },
+  { icon: "🎧", title: "Atención", body: "personalizada siempre" },
+];
 
 const SERVICES = [
   {
@@ -29,6 +50,11 @@ const SERVICES = [
     icon: "📋",
     title: "Trámites y gestión",
     body: "Gestión de matrículas, seguros y habilitaciones ante PNA, ARBA y AGIP. Asesoramiento desde el primer día hasta la transferencia definitiva.",
+  },
+  {
+    icon: "📡",
+    title: "Trámite AIS · ISMM / MMSI",
+    body: "Alta ISMM / MMSI ante ENACOM y carga de todos tus equipos: VHF, AIS, GPS, EPIRB. Gestionamos el trámite completo hasta su aprobación.",
   },
   {
     icon: "🌊",
@@ -64,6 +90,62 @@ export default function Services() {
                 <p>{s.body}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section section-surface" id="ais">
+        <div className="container">
+          <div className="section-head">
+            <span className="section-eyebrow">Trámites ISMM / MMSI</span>
+            <h2>¿Querés tener tu AIS?</h2>
+            <p>
+              Para navegar con seguridad. Rápido, simple y sin complicaciones: nos ocupamos de
+              todo el trámite ante ENACOM y vos solo disfrutá del mar.
+            </p>
+          </div>
+
+          <div className="content-2col">
+            <div className="doc-card">
+              <h3>🧭 ¿Qué hacemos por vos?</h3>
+              <ul className="doc-list">
+                {AIS_STEPS.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <span
+                className="section-eyebrow"
+                style={{ textAlign: "left", display: "block", marginBottom: "1.25rem" }}
+              >
+                Servicio integral de gestoría náutica
+              </span>
+              <div className="coverage-grid" style={{ marginTop: 0 }}>
+                {AIS_PILLARS.map((p) => (
+                  <div className="coverage-card" key={p.title}>
+                    <h3>
+                      {p.icon} {p.title}
+                    </h3>
+                    <p style={{ margin: 0, color: "var(--muted)", fontSize: ".9rem" }}>{p.body}</p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+                <a
+                  className="btn btn-primary btn-lg"
+                  href={AIS_WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener"
+                >
+                  💬 Consultar por mi AIS
+                </a>
+                <p style={{ marginTop: ".75rem", color: "var(--muted)", fontSize: ".9rem" }}>
+                  Navegá tranquilo, nos encargamos de todo el trámite.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
