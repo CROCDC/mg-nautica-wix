@@ -72,6 +72,9 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 .btn-outline:hover { background: var(--navy); color: #fff; }
 .btn-outline-white { background: transparent; color: #fff; border-color: rgba(255,255,255,.6); }
 .btn-outline-white:hover { background: rgba(255,255,255,.12); border-color: #fff; }
+/* Secundario sólido sobre fondo navy: se distingue del outline cuando hay tres CTAs juntos. */
+.btn-glass { background: rgba(255,255,255,.14); color: #fff; border-color: rgba(255,255,255,.24); }
+.btn-glass:hover { background: rgba(255,255,255,.26); border-color: rgba(255,255,255,.5); }
 .btn-ghost { background: transparent; color: var(--muted); border-color: var(--border); }
 .btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
 .btn-secondary { background: var(--white); color: var(--navy); border-color: var(--border); }

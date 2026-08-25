@@ -46,6 +46,9 @@ export default async function Home() {
               <Link className="btn btn-primary btn-lg" href="/category/all-products">
                 Explorar embarcaciones
               </Link>
+              <Link className="btn btn-glass btn-lg" href="/accessories">
+                Ver accesorios náuticos
+              </Link>
               <a
                 className="btn btn-outline-white btn-lg"
                 href={WHATSAPP_URL}
