@@ -13,7 +13,6 @@ const WHATSAPP_URL = "https://wa.me/5491126949628";
 const REGIONAL = [
   { name: "Sergio Ricci", area: "Buenos Aires Zona Norte y CABA" },
   { name: "Neil Skellorn", area: "Buenos Aires Zona Sur" },
-  { name: "Rodrigo", area: "Montevideo y Punta del Este" },
   { name: "Víctor", area: "Piriápolis" },
 ];
 
