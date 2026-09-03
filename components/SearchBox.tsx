@@ -27,6 +27,20 @@ export default function SearchBox({
   const [minV, setMinV] = useState(min);
   const [maxV, setMaxV] = useState(max);
 
+  // The URL is what the grid filters on, so the fields have to mirror it or the form is
+  // claiming a filter the results do not have. They need local state to stay editable,
+  // and every other control navigates without going through this component — the pills
+  // are plain links and Back is the browser's — so the resync has to happen here, keyed
+  // on the whole query and not just this form's share of it.
+  const applied = `${sort}|${q}|${min}|${max}|${type}`;
+  const [syncedTo, setSyncedTo] = useState(applied);
+  if (syncedTo !== applied) {
+    setSyncedTo(applied);
+    setValue(q);
+    setMinV(min);
+    setMaxV(max);
+  }
+
   // Keep `sort` plus any non-empty filter; drop the rest so URLs stay clean.
   function push(next: { q: string; min: string; max: string }) {
     const p = new URLSearchParams();

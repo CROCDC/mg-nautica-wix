@@ -343,15 +343,15 @@ test("the clear button shows up for a type picked on its own", async ({ page }) 
   await expect(page.getByRole("button", { name: "✕" })).toBeVisible();
 });
 
-test("switching category resets the type", async ({ page }) => {
+test("switching flag keeps the active type", async ({ page }) => {
   await gotoCatalog(page, "?type=crucero");
   await expect(pill(page, "Crucero")).toHaveClass(/btn-navy/);
 
   await page.getByRole("link", { name: /Uruguay/ }).first().click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Uruguay/);
-  await expect(pill(page, "Todos")).toHaveClass(/btn-navy/);
-  expect(new URL(page.url()).search).toBe("");
+  await expect(page).toHaveURL(/type=crucero/);
+  await expect(pill(page, "Crucero")).toHaveClass(/btn-navy/);
 });
 
 // ----- Sorting ----------------------------------------------------------------
@@ -447,18 +447,64 @@ test("clearing keeps the chosen sort", async ({ page }) => {
   await expect(page.locator("input#q")).toHaveValue("");
 });
 
+// ----- Bandera ----------------------------------------------------------------
+// The flag is the one filter that is not a query param: it swaps the category the grid
+// reads from. That makes its pills the only ones that navigate to a different path, and
+// the reason they are the only ones that ever dropped the rest of the bar.
+
+test("switching flag keeps the search, the bounds, the type and the sort", async ({ page }) => {
+  await gotoCatalog(page, "?sort=price-asc&q=velero&min=10000&max=90000&type=velero");
+
+  await page.getByRole("link", { name: /Uruguay/ }).first().click();
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Uruguay/);
+  await results(page).waitFor();
+
+  // Asserted as a whole map rather than four regexes: the bug dropped every param at
+  // once, and a param quietly added or renamed later is worth failing on too.
+  expect(Object.fromEntries(new URL(page.url()).searchParams)).toEqual({
+    sort: "price-asc",
+    q: "velero",
+    min: "10000",
+    max: "90000",
+    type: "velero",
+  });
+  await expect(page.locator(search)).toHaveValue("velero");
+  await expect(page.locator(minPrice)).toHaveValue("10000");
+  await expect(page.locator(maxPrice)).toHaveValue("90000");
+  await expect(pill(page, "Velero")).toHaveClass(/btn-navy/);
+  await expect(page.getByRole("link", { name: "Precio ↑" })).toHaveClass(/btn-navy/);
+});
+
+test("the flag pill that is already active changes nothing", async ({ page }) => {
+  // "Todas" is the highlighted flag on all-products, so clicking it reads as a no-op —
+  // which is exactly why it emptying the whole bar went unnoticed for so long.
+  await gotoCatalog(page, "?sort=price-asc&q=velero&min=10000&type=velero");
+  const before = await cardCount(page);
+
+  await page.getByRole("link", { name: "Todas" }).click();
+  await results(page).waitFor();
+
+  await expect(page).toHaveURL(/sort=price-asc/);
+  await expect(page).toHaveURL(/q=velero/);
+  await expect(page).toHaveURL(/min=10000/);
+  await expect(page).toHaveURL(/type=velero/);
+  expect(await cardCount(page)).toBe(before);
+});
+
 // ----- Crossing categories ----------------------------------------------------
 
-test("switching category resets the filter fields", async ({ page }) => {
-  // SearchBox is keyed by basePath, so the new category must not inherit the old query.
+test("switching flag keeps the filter fields", async ({ page }) => {
+  // SearchBox is keyed by basePath, so it remounts on the way across — the field has to
+  // come back holding the carried query, not the empty string a fresh mount defaults to.
   await gotoCatalog(page, "?q=velero");
   await expect(page.locator(search)).toHaveValue("velero");
 
   await page.getByRole("link", { name: /Uruguay/ }).first().click();
 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Uruguay/);
-  await expect(page.locator(search)).toHaveValue("");
-  expect(new URL(page.url()).search).toBe("");
+  await expect(page).toHaveURL(/q=velero/);
+  await expect(page.locator(search)).toHaveValue("velero");
 });
 
 test("the active flag pill is the one highlighted", async ({ page }) => {
@@ -470,6 +516,41 @@ test("the active flag pill is the one highlighted", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Uruguay/);
   await expect(page.getByRole("link", { name: /Uruguay/ }).first()).toHaveClass(/btn-navy/);
   await expect(page.getByRole("link", { name: "Todas" })).not.toHaveClass(/btn-navy/);
+});
+
+// ----- The fields follow the url ----------------------------------------------
+// SearchBox keeps q/min/max in local state and is keyed by the category, so nothing
+// re-syncs it while the visitor stays put. These two are what that costs: the URL is
+// what the grid filters on, so a field showing anything else is the form lying.
+
+test("a pill click drops a bound that was typed but never submitted", async ({ page }) => {
+  await gotoCatalog(page, "?q=velero");
+
+  await page.fill(maxPrice, "55000");
+  await pill(page, "Crucero").click();
+
+  await page.waitForURL(/[?&]type=crucero/);
+  await results(page).waitFor();
+  // It never reached the URL, so the grid is not applying it — and the field must not
+  // go on showing it as though it were.
+  expect(new URL(page.url()).searchParams.get("max")).toBeNull();
+  await expect(page.locator(maxPrice)).toHaveValue("");
+});
+
+test("going back restores the fields the url describes", async ({ page }) => {
+  await gotoCatalog(page, "?q=velero&min=10000");
+
+  await page.getByRole("button", { name: "✕" }).click();
+  await page.waitForURL((url) => url.searchParams.get("q") === null);
+  await results(page).waitFor();
+  await expect(page.locator(search)).toHaveValue("");
+
+  await page.goBack();
+
+  await page.waitForURL(/[?&]q=velero/);
+  await results(page).waitFor();
+  await expect(page.locator(search)).toHaveValue("velero");
+  await expect(page.locator(minPrice)).toHaveValue("10000");
 });
 
 // ----- On a phone -------------------------------------------------------------
