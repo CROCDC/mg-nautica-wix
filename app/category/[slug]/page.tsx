@@ -72,7 +72,8 @@ export default async function CategoryPage({
   if (!category) notFound();
 
   // Every pill row keeps the whole active state and overrides only its own key, so
-  // picking a type never drops the search and sorting never drops the type.
+  // picking a type never drops the search and sorting never drops the type. The flag
+  // row overrides nothing: it carries that same state onto a different category path.
   const qs = (over: { sort?: string; type?: BoatType | null } = {}) => {
     const p = new URLSearchParams();
     const nextSort = over.sort ?? sort;
@@ -130,11 +131,18 @@ export default async function CategoryPage({
           <div className="filter-group" style={{ flex: "0 1 auto" }}>
             <label>Bandera</label>
             <div className="pill-row">
-              <Link href="/category/all-products" className={pill(current === "all-products")}>
+              <Link
+                href={`/category/all-products${qs()}`}
+                className={pill(current === "all-products")}
+              >
                 Todas
               </Link>
               {FLAG_FILTERS.map((f) => (
-                <Link key={f.slug} href={`/category/${f.slug}`} className={pill(current === f.slug)}>
+                <Link
+                  key={f.slug}
+                  href={`/category/${f.slug}${qs()}`}
+                  className={pill(current === f.slug)}
+                >
                   {f.emoji} {f.label}
                 </Link>
               ))}
