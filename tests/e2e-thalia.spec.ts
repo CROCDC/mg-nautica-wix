@@ -35,6 +35,16 @@ test("hero introduces the boat with its name, year and price", async ({ page }) 
   await expect(page.locator(".bl-hero-price-value")).toHaveText("US$ 35,000");
 });
 
+test("hero says where the boat is and under which flag", async ({ page }) => {
+  await page.goto(LANDING);
+  const facts = page.locator(".bl-hero-facts");
+
+  await expect(facts).toContainText("Riachuelo, Colonia del Sacramento, Uruguay");
+  await expect(facts).toContainText("Bandera argentina");
+  // The pin icon is decorative, so screen readers get the word instead.
+  await expect(facts.getByText("Ubicación:")).toHaveCount(1);
+});
+
 test("key stats strip shows the six headline numbers", async ({ page }) => {
   await page.goto(LANDING);
   const stats = page.locator(".bl-stat");
@@ -59,6 +69,8 @@ test("technical sheet lists every spec from the listing", async ({ page }) => {
     Constructor: "Parodi",
     Diseño: "Campos",
     Matrícula: "06902 REY",
+    Bandera: "Argentina",
+    Ubicación: "Riachuelo, Colonia del Sacramento, Uruguay",
   };
   for (const [label, value] of Object.entries(rows)) {
     const row = sheet.locator(".bl-spec-row").filter({ has: page.locator("dt", { hasText: label }) });

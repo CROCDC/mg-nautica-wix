@@ -42,7 +42,8 @@ test("a live boat detail page resolves from the catalog", async ({ page }) => {
   await page.goto("/category/all-products");
   await expect(page.locator("p.results-count:not(.sk)")).toBeVisible();
 
-  const card = page.locator(".boat-card").first();
+  // Boats with a landing page (lib/landings.ts) link there instead of to their listing.
+  const card = page.locator('.boat-card[href^="/product-page/"]').first();
   const name = (await card.locator(".boat-card-title").textContent())?.trim() ?? "";
   await card.click();
 

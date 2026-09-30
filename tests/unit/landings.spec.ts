@@ -7,7 +7,7 @@
  */
 
 import { test, expect } from "@playwright/test";
-import { LANDING_BY_SLUG, THALIA_PRODUCT_SLUG } from "@/lib/landings";
+import { LANDING_BY_SLUG, THALIA_PRODUCT_SLUG, boatHref } from "@/lib/landings";
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { GALLERY, PHOTOS, SPECS, THALIA_REEL_POSTER, THALIA_REEL_VARIANTS } from "@/app/thalia/thalia";
@@ -15,6 +15,16 @@ import { GALLERY, PHOTOS, SPECS, THALIA_REEL_POSTER, THALIA_REEL_VARIANTS } from
 test("the thalia slug is stored in the same unicode form Wix uses", () => {
   expect(THALIA_PRODUCT_SLUG).toBe(THALIA_PRODUCT_SLUG.normalize("NFC"));
   expect(LANDING_BY_SLUG[THALIA_PRODUCT_SLUG]).toBe("/thalia");
+});
+
+test("catalog cards send a boat with a landing to that landing", () => {
+  expect(boatHref(THALIA_PRODUCT_SLUG)).toBe("/thalia");
+});
+
+test("catalog cards send every other boat to its listing", () => {
+  expect(boatHref("impecable-grumete-de-madera-solo-para-entendidos")).toBe(
+    "/product-page/impecable-grumete-de-madera-solo-para-entendidos",
+  );
 });
 
 test("every thalia photo points at the Wix CDN and knows its dimensions", () => {
