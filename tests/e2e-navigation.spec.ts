@@ -10,6 +10,7 @@ import { test, expect } from "./fixtures";
 
 const NAV = [
   { label: "Embarcaciones", path: "/category/all-products", heading: "Embarcaciones" },
+  { label: "Thalia", path: "/thalia", heading: "Thalia" },
   { label: "Accesorios", path: "/accessories", heading: "Accesorios náuticos" },
   { label: "Curso en Brasil", path: "/brazil-course", heading: "Cursos Internacionales — Brasil" },
   { label: "Servicios", path: "/services", heading: "Nuestros servicios" },

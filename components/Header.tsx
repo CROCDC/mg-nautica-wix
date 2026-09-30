@@ -4,6 +4,7 @@ import Image from "next/image";
 // Catalog points at the Wix category URL (/category/<slug>); the rest are local routes.
 const NAV = [
   { href: "/category/all-products", label: "Embarcaciones" },
+  { href: "/thalia", label: "Thalia" },
   { href: "/accessories", label: "Accesorios" },
   { href: "/brazil-course", label: "Curso en Brasil" },
   { href: "/services", label: "Servicios" },
