@@ -9,15 +9,15 @@
 
 import path from "node:path";
 import { test, expect, type Page } from "./fixtures";
-import { THALIA_VIDEO_URL } from "@/app/thalia/thalia";
 import { SAMPLE_PRODUCT_SLUG } from "./pages";
 
 const LANDING = "/thalia";
 const GALLERY_SIZE = 9;
 
-// A 1s VP8 clip: Playwright's Chromium ships without H.264, so the real mp4 could never
-// play here — and the test should not depend on Wix's video CDN anyway.
+// A 1s VP8 clip stands in for every hero variant: Playwright's Chromium ships without
+// H.264, so the real mp4s could never play here.
 const VIDEO_FIXTURE = path.join(__dirname, "assets", "loop.webm");
+const HERO_VIDEO = "**/site/thalia/hero-*.mp4";
 
 const photoTiles = (page: Page) => page.locator(".bl-photo");
 
@@ -283,7 +283,7 @@ test("with reduced motion the hero video is never started or downloaded", async 
   // The config asks for reduced motion by default, which is the case under test.
   let videoRequested = false;
   page.on("request", (req) => {
-    if (req.url() === THALIA_VIDEO_URL) videoRequested = true;
+    if (req.url().includes("/site/thalia/hero-")) videoRequested = true;
   });
   await page.goto(LANDING, { waitUntil: "networkidle" });
 
@@ -297,7 +297,7 @@ test("with reduced motion the hero video is never started or downloaded", async 
 
 test("without reduced motion the hero video plays muted and fades in", async ({ browser }) => {
   const context = await browser.newContext({ reducedMotion: "no-preference" });
-  await context.route(THALIA_VIDEO_URL, (route) =>
+  await context.route(HERO_VIDEO, (route) =>
     route.fulfill({ path: VIDEO_FIXTURE, contentType: "video/webm" }),
   );
   const page = await context.newPage();
@@ -317,7 +317,7 @@ test("without reduced motion the hero video plays muted and fades in", async ({ 
 
 test("a video that fails to load leaves the hero photo in place", async ({ browser }) => {
   const context = await browser.newContext({ reducedMotion: "no-preference" });
-  await context.route(THALIA_VIDEO_URL, (route) => route.abort());
+  await context.route(HERO_VIDEO, (route) => route.abort());
   const page = await context.newPage();
 
   try {
@@ -330,6 +330,40 @@ test("a video that fails to load leaves the hero photo in place", async ({ brows
     await context.close();
   }
 });
+
+// Each screen downloads the smallest variant that still covers the hero in device pixels.
+const VARIANT_CASES = [
+  { screen: "a 1280px desktop", viewport: { width: 1280, height: 720 }, dpr: 1, file: "hero-720.mp4" },
+  { screen: "a 1920px desktop", viewport: { width: 1920, height: 1080 }, dpr: 1, file: "hero-1080.mp4" },
+  { screen: "a retina laptop", viewport: { width: 1440, height: 900 }, dpr: 2, file: "hero-1440.mp4" },
+  // 3x would ask for the largest file; phones are capped to spare mobile data.
+  { screen: "a 3x phone", viewport: { width: 375, height: 667 }, dpr: 3, file: "hero-1080.mp4" },
+];
+
+for (const { screen, viewport, dpr, file } of VARIANT_CASES) {
+  test(`${screen} downloads ${file}`, async ({ browser }) => {
+    const context = await browser.newContext({
+      reducedMotion: "no-preference",
+      viewport,
+      deviceScaleFactor: dpr,
+    });
+    const requested: string[] = [];
+    await context.route(HERO_VIDEO, (route) => {
+      requested.push(new URL(route.request().url()).pathname);
+      return route.fulfill({ path: VIDEO_FIXTURE, contentType: "video/webm" });
+    });
+    const page = await context.newPage();
+
+    try {
+      await page.goto(LANDING);
+      await expect(page.locator(".bl-hero-video")).toHaveClass(/playing/);
+
+      expect(new Set(requested)).toEqual(new Set([`/site/thalia/${file}`]));
+    } finally {
+      await context.close();
+    }
+  });
+}
 
 // ----- Structured data --------------------------------------------------------
 

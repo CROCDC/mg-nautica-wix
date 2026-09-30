@@ -8,7 +8,9 @@
 
 import { test, expect } from "@playwright/test";
 import { LANDING_BY_SLUG, THALIA_PRODUCT_SLUG } from "@/lib/landings";
-import { GALLERY, PHOTOS, SPECS, THALIA_VIDEO_URL } from "@/app/thalia/thalia";
+import { readFileSync, statSync } from "node:fs";
+import path from "node:path";
+import { GALLERY, PHOTOS, SPECS, THALIA_VIDEO_VARIANTS } from "@/app/thalia/thalia";
 
 test("the thalia slug is stored in the same unicode form Wix uses", () => {
   expect(THALIA_PRODUCT_SLUG).toBe(THALIA_PRODUCT_SLUG.normalize("NFC"));
@@ -34,7 +36,36 @@ test("spec labels are unique so the technical sheet has no duplicated rows", () 
   expect(new Set(labels).size).toBe(labels.length);
 });
 
-test("the hero video uses the rendition Wix actually serves", () => {
-  // 720p and 1080p answer 403 for this upload; only 480p and below exist.
-  expect(THALIA_VIDEO_URL).toMatch(/^https:\/\/video\.wixstatic\.com\/video\/[^/]+\/480p\/mp4\/file\.mp4$/);
+/** Width x height of the first track in an mp4, read from its `tkhd` box (version 0). */
+function mp4Dimensions(file: string): { width: number; height: number } {
+  const buf = readFileSync(file);
+  const at = buf.indexOf("tkhd");
+  // Past the box type: 4 version/flags + 20 times/ids + 8 reserved + 8 layer..volume + 36 matrix.
+  const dims = at + 4 + 4 + 20 + 8 + 8 + 36;
+  return { width: buf.readUInt32BE(dims) >>> 16, height: buf.readUInt32BE(dims + 4) >>> 16 };
+}
+
+const publicFile = (src: string) => path.join(__dirname, "..", "..", "public", src);
+
+test("every hero video variant exists at the width it declares, in 16:9", () => {
+  for (const { src, width } of THALIA_VIDEO_VARIANTS) {
+    const dims = mp4Dimensions(publicFile(src));
+    expect(dims.width, src).toBe(width);
+    expect(dims.height, src).toBe(Math.round((width * 9) / 16));
+  }
+});
+
+test("hero video variants stay light enough for a background loop", () => {
+  // Nine seconds of looping background; anything heavier hurts more than it adds.
+  const budgetMb: Record<number, number> = { 1280: 4, 1920: 8, 2560: 12 };
+  for (const { src, width } of THALIA_VIDEO_VARIANTS) {
+    const mb = statSync(publicFile(src)).size / 1024 / 1024;
+    expect(mb, `${src} is ${mb.toFixed(1)} MB`).toBeLessThanOrEqual(budgetMb[width]);
+  }
+});
+
+test("hero video variants are listed smallest first with no duplicate widths", () => {
+  const widths = THALIA_VIDEO_VARIANTS.map((v) => v.width);
+  expect(widths).toEqual([...widths].sort((a, b) => a - b));
+  expect(new Set(widths).size).toBe(widths.length);
 });

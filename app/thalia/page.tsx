@@ -14,7 +14,7 @@ import {
   SPECS,
   THALIA_PRICE_USD,
   THALIA_PRODUCT_SLUG,
-  THALIA_VIDEO_URL,
+  THALIA_VIDEO_VARIANTS,
   THALIA_WHATSAPP_URL,
   TIMELINE,
 } from "./thalia";
@@ -86,7 +86,7 @@ export default function ThaliaLanding() {
             unoptimized
             sizes="100vw"
           />
-          <HeroVideo src={THALIA_VIDEO_URL} />
+          <HeroVideo variants={THALIA_VIDEO_VARIANTS} />
         </div>
         <div className="bl-hero-inner">
           <div className="hero-text bl-hero-text">

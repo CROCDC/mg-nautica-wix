@@ -1,4 +1,5 @@
 import type { BoatImage } from "@/lib/wix-image";
+import type { VideoVariant } from "@/components/HeroVideo";
 
 export { THALIA_PRODUCT_SLUG } from "@/lib/landings";
 
@@ -15,9 +16,14 @@ export const THALIA_WHATSAPP_URL =
     "Hola! Me interesa el motovelero clásico Thalia (1931). ¿Podemos coordinar una visita?",
   );
 
-// The 480p rendition is the largest Wix transcoded for this upload (720p/1080p answer 403).
-export const THALIA_VIDEO_URL =
-  "https://video.wixstatic.com/video/fac5f8_c262340b21e2456aa0c72617abf02959/480p/mp4/file.mp4";
+// Hero loop, AI-upscaled (Real-ESRGAN) from the owners' 848x478 phone clip and served
+// from our own static assets: Wix only transcodes that upload up to 480p, which looked
+// soft stretched across a desktop hero.
+export const THALIA_VIDEO_VARIANTS: VideoVariant[] = [
+  { src: "/site/thalia/hero-720.mp4", width: 1280 },
+  { src: "/site/thalia/hero-1080.mp4", width: 1920 },
+  { src: "/site/thalia/hero-1440.mp4", width: 2560 },
+];
 
 const wix = (id: string, width: number, height: number, alt: string): BoatImage => ({
   url: `https://static.wixstatic.com/media/${id}`,
