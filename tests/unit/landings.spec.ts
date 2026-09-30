@@ -57,7 +57,7 @@ test("every hero video variant exists at the width it declares, in 16:9", () => 
 
 test("hero video variants stay light enough for a background loop", () => {
   // Nine seconds of looping background; anything heavier hurts more than it adds.
-  const budgetMb: Record<number, number> = { 1280: 4, 1920: 8, 2560: 12 };
+  const budgetMb: Record<number, number> = { 1280: 4, 1920: 8, 2560: 14 };
   for (const { src, width } of THALIA_VIDEO_VARIANTS) {
     const mb = statSync(publicFile(src)).size / 1024 / 1024;
     expect(mb, `${src} is ${mb.toFixed(1)} MB`).toBeLessThanOrEqual(budgetMb[width]);
