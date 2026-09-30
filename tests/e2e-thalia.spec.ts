@@ -9,15 +9,17 @@
 
 import path from "node:path";
 import { test, expect, type Page } from "./fixtures";
-import { THALIA_VIDEO_URL } from "@/app/thalia/thalia";
+import type { Browser } from "@playwright/test";
 import { SAMPLE_PRODUCT_SLUG } from "./pages";
 
 const LANDING = "/thalia";
 const GALLERY_SIZE = 9;
 
-// A 1s VP8 clip: Playwright's Chromium ships without H.264, so the real mp4 could never
-// play here — and the test should not depend on Wix's video CDN anyway.
+// A 1s VP8 clip stands in for every reel variant: Playwright's Chromium ships without
+// H.264, so the real mp4s could never play here.
 const VIDEO_FIXTURE = path.join(__dirname, "assets", "loop.webm");
+const REEL = "**/site/thalia/reel-*.mp4";
+const reelVideo = (page: Page) => page.locator(".bl-reel video");
 
 const photoTiles = (page: Page) => page.locator(".bl-photo");
 
@@ -277,58 +279,206 @@ test("gallery tiles can be opened from the keyboard", async ({ page }) => {
   await expect(page.locator(".lb-counter")).toHaveText(`2 / ${GALLERY_SIZE}`);
 });
 
-// ----- Hero background video --------------------------------------------------
+// ----- Hero reel ----------------------------------------------------------------
 
-test("with reduced motion the hero video is never started or downloaded", async ({ page }) => {
+/** A context where the reel may autoplay, with every variant served by the fixture. */
+async function motionContext(
+  browser: Browser,
+  options: { viewport?: { width: number; height: number }; deviceScaleFactor?: number } = {},
+) {
+  const context = await browser.newContext({ reducedMotion: "no-preference", ...options });
+  const requested: string[] = [];
+  await context.route(REEL, (route) => {
+    requested.push(new URL(route.request().url()).pathname);
+    return route.fulfill({ path: VIDEO_FIXTURE, contentType: "video/webm" });
+  });
+  return { context, requested };
+}
+
+const isPaused = (page: Page) => reelVideo(page).evaluate((v: HTMLVideoElement) => v.paused);
+const isMuted = (page: Page) => reelVideo(page).evaluate((v: HTMLVideoElement) => v.muted);
+
+test("with reduced motion the reel waits on its poster and downloads nothing", async ({ page }) => {
   // The config asks for reduced motion by default, which is the case under test.
-  let videoRequested = false;
+  let requested = false;
   page.on("request", (req) => {
-    if (req.url() === THALIA_VIDEO_URL) videoRequested = true;
+    if (req.url().includes("/site/thalia/reel-") && req.url().endsWith(".mp4")) requested = true;
   });
   await page.goto(LANDING, { waitUntil: "networkidle" });
 
-  const video = page.locator(".bl-hero-video");
-  expect(await video.evaluate((v: HTMLVideoElement) => v.paused)).toBe(true);
-  await expect(video).not.toHaveClass(/playing/);
-  expect(videoRequested).toBe(false);
-  // The photo underneath stays as the visible hero.
-  await expect(page.locator(".bl-hero-media img")).toBeVisible();
+  expect(await isPaused(page)).toBe(true);
+  expect(requested).toBe(false);
+  await expect(reelVideo(page)).toHaveAttribute("poster", "/site/thalia/reel-poster.jpg");
+  await expect(page.getByRole("button", { name: "Reproducir video" })).toBeVisible();
 });
 
-test("without reduced motion the hero video plays muted and fades in", async ({ browser }) => {
-  const context = await browser.newContext({ reducedMotion: "no-preference" });
-  await context.route(THALIA_VIDEO_URL, (route) =>
-    route.fulfill({ path: VIDEO_FIXTURE, contentType: "video/webm" }),
-  );
+test("with reduced motion the visitor can still start the reel by hand", async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  await context.route(REEL, (route) => route.fulfill({ path: VIDEO_FIXTURE, contentType: "video/webm" }));
   const page = await context.newPage();
 
   try {
     await page.goto(LANDING);
-    const video = page.locator(".bl-hero-video");
+    await page.getByRole("button", { name: "Reproducir video" }).click();
 
-    await expect(video).toHaveClass(/playing/);
+    await expect(page.getByRole("button", { name: "Pausar video" })).toBeVisible();
+    expect(await isPaused(page)).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("without reduced motion the reel autoplays muted and on a loop", async ({ browser }) => {
+  const { context } = await motionContext(browser);
+  const page = await context.newPage();
+
+  try {
+    await page.goto(LANDING);
+
+    await expect(page.getByRole("button", { name: "Pausar video" })).toBeVisible();
     expect(
-      await video.evaluate((v: HTMLVideoElement) => ({ muted: v.muted, loop: v.loop, paused: v.paused })),
+      await reelVideo(page).evaluate((v: HTMLVideoElement) => ({ muted: v.muted, loop: v.loop, paused: v.paused })),
     ).toEqual({ muted: true, loop: true, paused: false });
   } finally {
     await context.close();
   }
 });
 
-test("a video that fails to load leaves the hero photo in place", async ({ browser }) => {
+test("the pause button stops the reel and play resumes it", async ({ browser }) => {
+  const { context } = await motionContext(browser);
+  const page = await context.newPage();
+
+  try {
+    await page.goto(LANDING);
+    await page.getByRole("button", { name: "Pausar video" }).click();
+
+    await expect(page.getByRole("button", { name: "Reproducir video" })).toBeVisible();
+    expect(await isPaused(page)).toBe(true);
+
+    await page.getByRole("button", { name: "Reproducir video" }).click();
+    await expect(page.getByRole("button", { name: "Pausar video" })).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
+
+test("the sound button toggles the audio and says which state it is in", async ({ browser }) => {
+  const { context } = await motionContext(browser);
+  const page = await context.newPage();
+
+  try {
+    await page.goto(LANDING);
+    const soundOn = page.getByRole("button", { name: "Activar sonido" });
+    await expect(soundOn).toHaveAttribute("aria-pressed", "false");
+
+    await soundOn.click();
+    const soundOff = page.getByRole("button", { name: "Silenciar" });
+    await expect(soundOff).toHaveAttribute("aria-pressed", "true");
+    expect(await isMuted(page)).toBe(false);
+
+    await soundOff.click();
+    await expect(page.getByRole("button", { name: "Activar sonido" })).toBeVisible();
+    expect(await isMuted(page)).toBe(true);
+  } finally {
+    await context.close();
+  }
+});
+
+test("turning the sound on also starts a reel that was not playing", async ({ browser }) => {
+  // Reduced motion: nothing autoplays, so asking for sound is the first interaction.
+  const context = await browser.newContext({ reducedMotion: "reduce" });
+  await context.route(REEL, (route) => route.fulfill({ path: VIDEO_FIXTURE, contentType: "video/webm" }));
+  const page = await context.newPage();
+
+  try {
+    await page.goto(LANDING);
+    await page.getByRole("button", { name: "Activar sonido" }).click();
+
+    await expect(page.getByRole("button", { name: "Pausar video" })).toBeVisible();
+    expect(await isMuted(page)).toBe(false);
+  } finally {
+    await context.close();
+  }
+});
+
+test("a reel that fails to load leaves the poster and the page intact", async ({ browser }) => {
   const context = await browser.newContext({ reducedMotion: "no-preference" });
-  await context.route(THALIA_VIDEO_URL, (route) => route.abort());
+  await context.route(REEL, (route) => route.abort());
   const page = await context.newPage();
 
   try {
     await page.goto(LANDING, { waitUntil: "networkidle" });
 
-    await expect(page.locator(".bl-hero-video")).not.toHaveClass(/playing/);
-    await expect(page.locator(".bl-hero-media img")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Reproducir video" })).toBeVisible();
+    await expect(reelVideo(page)).toHaveAttribute("poster", /reel-poster\.jpg$/);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Thalia");
   } finally {
     await context.close();
   }
+});
+
+// Each screen downloads the smallest variant that still covers the reel in device pixels.
+const VARIANT_CASES = [
+  { screen: "a 1280px desktop (card)", viewport: { width: 1280, height: 720 }, dpr: 1, file: "reel-1280.mp4" },
+  { screen: "a retina laptop (card)", viewport: { width: 1440, height: 900 }, dpr: 2, file: "reel-1280.mp4" },
+  { screen: "a 1x phone (full screen)", viewport: { width: 360, height: 640 }, dpr: 1, file: "reel-1280.mp4" },
+  { screen: "a 3x phone (full screen)", viewport: { width: 390, height: 844 }, dpr: 3, file: "reel-1920.mp4" },
+];
+
+for (const { screen, viewport, dpr, file } of VARIANT_CASES) {
+  test(`${screen} downloads ${file}`, async ({ browser }) => {
+    const { context, requested } = await motionContext(browser, { viewport, deviceScaleFactor: dpr });
+    const page = await context.newPage();
+
+    try {
+      await page.goto(LANDING);
+      await expect(page.getByRole("button", { name: "Pausar video" })).toBeVisible();
+
+      expect(new Set(requested)).toEqual(new Set([`/site/thalia/${file}`]));
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+test.describe("reel layout on desktop", () => {
+  test.use({ viewport: { width: 1280, height: 720 } });
+
+  test("the reel is a whole 9:16 card to the right of the copy", async ({ page }) => {
+    await page.goto(LANDING);
+    const reel = await page.locator(".bl-reel").boundingBox();
+    const copy = await page.locator(".bl-hero-text").boundingBox();
+    const hero = await page.locator(".bl-hero").boundingBox();
+
+    expect(reel!.x).toBeGreaterThan(copy!.x + copy!.width);
+    expect(reel!.width / reel!.height).toBeCloseTo(9 / 16, 2);
+    // Entirely inside the hero: nothing of the vertical clip is cut off.
+    expect(reel!.y).toBeGreaterThanOrEqual(hero!.y);
+    expect(reel!.y + reel!.height).toBeLessThanOrEqual(hero!.y + hero!.height);
+  });
+});
+
+test.describe("reel layout on a phone", () => {
+  test.use({ viewport: { width: 375, height: 667 } });
+
+  test("the reel fills the whole hero behind the copy", async ({ page }) => {
+    await page.goto(LANDING);
+    const reel = await page.locator(".bl-reel").boundingBox();
+    const hero = await page.locator(".bl-hero").boundingBox();
+
+    expect(Math.round(reel!.width)).toBe(Math.round(hero!.width));
+    expect(Math.round(reel!.height)).toBe(Math.round(hero!.height));
+  });
+
+  test("the reel controls stay clear of the call to action", async ({ page }) => {
+    await page.goto(LANDING);
+    const controls = await page.locator(".bl-reel-controls").boundingBox();
+    const cta = await page.locator(".bl-hero").getByRole("link", { name: /Consultar por WhatsApp/ }).boundingBox();
+
+    expect(controls!.y + controls!.height).toBeLessThan(cta!.y);
+    // And they are reachable: the copy layered on top does not swallow the tap.
+    await page.getByRole("button", { name: "Reproducir video" }).click({ trial: true });
+  });
 });
 
 // ----- Structured data --------------------------------------------------------

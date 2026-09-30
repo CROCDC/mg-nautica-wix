@@ -2,13 +2,13 @@
  * Live checks for the Thalia landing.
  *
  * Unlike the rest of the live suite, these ARE about one specific boat, on purpose: the
- * landing hard-codes Thalia's Wix media and slug, so if the owner removes a photo or the
+ * landing hard-codes Thalia's Wix photos and slug, so if the owner removes a photo or the
  * listing, the landing breaks silently — nothing in the mocked suite can notice. When the
  * boat is sold these go red, and that is the signal to take the landing down.
  */
 
 import { test, expect } from "../fixtures";
-import { GALLERY, PHOTOS, THALIA_VIDEO_URL } from "@/app/thalia/thalia";
+import { GALLERY, PHOTOS } from "@/app/thalia/thalia";
 import { THALIA_PRODUCT_SLUG } from "@/lib/landings";
 import { wixImageUrl } from "@/lib/wix-image";
 
@@ -44,13 +44,4 @@ test("every Thalia photo is still served by the Wix CDN", async ({ request }) =>
     expect(response.headers()["content-type"], img.alt).toContain("image");
   }
   expect(GALLERY.length).toBeGreaterThan(0);
-});
-
-test("the hero video is still served by the Wix video CDN", async ({ request }) => {
-  const response = await request.get(THALIA_VIDEO_URL, {
-    headers: { "user-agent": BROWSER_UA, range: "bytes=0-1023" },
-  });
-
-  expect([200, 206]).toContain(response.status());
-  expect(response.headers()["content-type"]).toContain("video/mp4");
 });

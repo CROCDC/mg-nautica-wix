@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { wixImageUrl } from "@/lib/wix-image";
-import HeroVideo from "@/components/HeroVideo";
+import HeroReel from "@/components/HeroReel";
 import PhotoGrid from "@/components/PhotoGrid";
 import {
   EQUIPMENT,
@@ -14,7 +14,8 @@ import {
   SPECS,
   THALIA_PRICE_USD,
   THALIA_PRODUCT_SLUG,
-  THALIA_VIDEO_URL,
+  THALIA_REEL_POSTER,
+  THALIA_REEL_VARIANTS,
   THALIA_WHATSAPP_URL,
   TIMELINE,
 } from "./thalia";
@@ -86,7 +87,6 @@ export default function ThaliaLanding() {
             unoptimized
             sizes="100vw"
           />
-          <HeroVideo src={THALIA_VIDEO_URL} />
         </div>
         <div className="bl-hero-inner">
           <div className="hero-text bl-hero-text">
@@ -109,6 +109,11 @@ export default function ThaliaLanding() {
               </a>
             </div>
           </div>
+          <HeroReel
+            variants={THALIA_REEL_VARIANTS}
+            poster={THALIA_REEL_POSTER}
+            label="Video de Thalia navegando"
+          />
         </div>
       </section>
 
