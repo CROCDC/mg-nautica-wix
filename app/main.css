@@ -106,7 +106,7 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 }
 .nav-links a {
   color: rgba(255,255,255,.8); font-size: .9rem; font-weight: 500;
-  padding: .4rem .7rem; border-radius: var(--radius-sm);
+  padding: .4rem .55rem; border-radius: var(--radius-sm);
   transition: var(--transition);
 }
 .nav-links a:hover, .nav-links a.active { color: #fff; background: rgba(255,255,255,.1); }
@@ -543,7 +543,7 @@ nexttech-footer { display: block; background: #060F1E; padding: .75rem 0; }
 .nav-links a { position: relative; }
 .nav-links a::after {
   content: '';
-  position: absolute; bottom: 2px; left: .7rem; right: .7rem;
+  position: absolute; bottom: 2px; left: .55rem; right: .55rem;
   height: 1px; background: var(--gold);
   transform: scaleX(0); transform-origin: center;
   transition: transform .22s cubic-bezier(.22,1,.36,1);
