@@ -47,3 +47,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 /_accessory-images
+
+# AI video upscale work dir (scripts/upscale-hero-video.sh)
+/.upscale-work/
