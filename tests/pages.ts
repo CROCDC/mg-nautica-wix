@@ -19,6 +19,7 @@ export const PUBLIC_PAGES: string[] = [
   "/category/all-products",
   "/accessories",
   "/brazil-course",
+  "/thalia",
   "/services",
   "/sell-your-boat",
   "/about-us",
