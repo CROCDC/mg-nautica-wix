@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import { type BoatImage, wixImageUrl } from "@/lib/wix-image";
+import Lightbox from "@/components/Lightbox";
 
 export default function Gallery({ images }: { images: BoatImage[] }) {
   const [idx, setIdx] = useState(0);
@@ -10,20 +11,7 @@ export default function Gallery({ images }: { images: BoatImage[] }) {
   const count = images.length;
   const go = useCallback((dir: number) => setIdx((i) => (i + dir + count) % count), [count]);
 
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setLightbox(false);
-      if (e.key === "ArrowRight") go(1);
-      if (e.key === "ArrowLeft") go(-1);
-    };
-    document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
-  }, [lightbox, go]);
+  const closeLightbox = useCallback(() => setLightbox(false), []);
 
   if (!count) return null;
   const current = images[idx];
@@ -83,39 +71,7 @@ export default function Gallery({ images }: { images: BoatImage[] }) {
       )}
 
       {lightbox && (
-        <div className="lightbox open" onClick={() => setLightbox(false)}>
-          <button className="lb-close" onClick={() => setLightbox(false)} aria-label="Cerrar">
-            ✕
-          </button>
-          {count > 1 && (
-            <button
-              className="lb-arrow prev"
-              onClick={(e) => { e.stopPropagation(); go(-1); }}
-              aria-label="Anterior"
-            >
-              ‹
-            </button>
-          )}
-          {/* eslint-disable-next-line @next/next/no-img-element -- Wix-CDN-sized, off Vercel's transform quota */}
-          <img
-            className="lb-img"
-            src={wixImageUrl(current, 1600, 1600, { mode: "fit", q: 85 })}
-            alt={current.alt}
-            onClick={(e) => e.stopPropagation()}
-          />
-          {count > 1 && (
-            <button
-              className="lb-arrow next"
-              onClick={(e) => { e.stopPropagation(); go(1); }}
-              aria-label="Siguiente"
-            >
-              ›
-            </button>
-          )}
-          <div className="lb-counter">
-            {idx + 1} / {count}
-          </div>
-        </div>
+        <Lightbox images={images} index={idx} onNavigate={go} onClose={closeLightbox} />
       )}
     </div>
   );

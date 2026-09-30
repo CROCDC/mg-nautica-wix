@@ -41,6 +41,25 @@ async function waitForCountersToSettle(page: Page): Promise<void> {
     .toBe(true);
 }
 
+/**
+ * A full-page screenshot does not scroll, so `loading="lazy"` images below the fold are
+ * never requested and bake blank boxes into the baseline. Switching them to eager makes
+ * the browser fetch them right away; then wait until every image has settled.
+ */
+async function loadLazyImages(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    document.querySelectorAll<HTMLImageElement>('img[loading="lazy"]').forEach((img) => {
+      img.loading = "eager";
+    });
+  });
+  await expect
+    .poll(() => page.evaluate(() => [...document.images].every((img) => img.complete)), {
+      timeout: 20_000,
+    })
+    .toBe(true);
+  await page.waitForLoadState("networkidle");
+}
+
 for (const viewport of VIEWPORTS) {
   for (const pagePath of PUBLIC_PAGES) {
     const name = pageSlug(pagePath);
@@ -62,6 +81,7 @@ for (const viewport of VIEWPORTS) {
             `${scrollWidth}px > ${viewport.width}px`,
         ).toBeLessThanOrEqual(viewport.width + 1);
 
+        await loadLazyImages(page);
         await waitForCountersToSettle(page);
         await page.screenshot({
           path: path.join(SCREENSHOT_DIR, `${name}-${viewport.name}.png`),

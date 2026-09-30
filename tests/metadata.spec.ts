@@ -110,3 +110,24 @@ test("a boat that is missing gets a plain title instead of a broken one", async 
   await page.goto("/product-page/no-such-boat-slug-for-tests");
   await expect(page).toHaveTitle("Embarcación no encontrada · MG Náutica");
 });
+
+// ----- Thalia landing ---------------------------------------------------------
+
+test("the Thalia landing has its own title, description and canonical", async ({ page }) => {
+  await page.goto("/thalia");
+
+  await expect(page).toHaveTitle("Thalia — Motovelero clásico de madera de 1931 · MG Náutica");
+  expect(await content(page, 'meta[name="description"]')).toContain("motovelero clásico de madera de 1931");
+  expect(await page.locator('link[rel="canonical"]').first().getAttribute("href")).toMatch(/\/thalia$/);
+});
+
+test("the Thalia landing shares a 1200x630 photo of the boat in link previews", async ({ page }) => {
+  await page.goto("/thalia");
+
+  const image = await content(page, 'meta[property="og:image"]');
+  expect(image).toMatch(/^https:\/\/static\.wixstatic\.com\/media\/.+\/v1\/fill\/w_1200,h_630,/);
+  expect(await content(page, 'meta[property="og:image:secure_url"]')).toBe(image);
+  expect(await content(page, 'meta[property="og:image:width"]')).toBe("1200");
+  expect(await content(page, 'meta[property="og:image:height"]')).toBe("630");
+  expect(await content(page, 'meta[property="og:title"]')).toContain("Thalia");
+});

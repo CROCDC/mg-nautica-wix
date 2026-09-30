@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getBoatBySlug, formatUsd, ricosToPlainText } from "@/lib/wix";
 import Gallery from "@/components/Gallery";
 import RichText from "@/components/RichText";
+import { LANDING_BY_SLUG } from "@/lib/landings";
 
 // Always fetch the latest from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -57,6 +58,7 @@ export default async function ProductPage({
   const waText = encodeURIComponent(
     `Hola! Me interesa: ${boat.name}. ¿Podemos coordinar una visita?`,
   );
+  const landing = LANDING_BY_SLUG[boat.slug];
   const savings =
     boat.onSale && boat.compareAtUsd && boat.priceUsd
       ? boat.compareAtUsd - boat.priceUsd
@@ -117,6 +119,11 @@ export default async function ProductPage({
               >
                 💬 Contactar por WhatsApp
               </a>
+              {landing ? (
+                <Link className="btn btn-outline btn-lg" href={landing}>
+                  Ver presentación completa
+                </Link>
+              ) : null}
             </div>
             <p style={{ marginTop: ".85rem", fontSize: ".82rem", color: "var(--muted)", lineHeight: 1.5 }}>
               Coordinamos visitas y respondemos consultas por WhatsApp. Gestión integral de la
