@@ -8,7 +8,9 @@
 
 import { test, expect } from "@playwright/test";
 import { LANDING_BY_SLUG, THALIA_PRODUCT_SLUG } from "@/lib/landings";
-import { GALLERY, PHOTOS, SPECS, THALIA_VIDEO_URL } from "@/app/thalia/thalia";
+import { readFileSync, statSync } from "node:fs";
+import path from "node:path";
+import { GALLERY, PHOTOS, SPECS, THALIA_REEL_POSTER, THALIA_REEL_VARIANTS } from "@/app/thalia/thalia";
 
 test("the thalia slug is stored in the same unicode form Wix uses", () => {
   expect(THALIA_PRODUCT_SLUG).toBe(THALIA_PRODUCT_SLUG.normalize("NFC"));
@@ -34,7 +36,42 @@ test("spec labels are unique so the technical sheet has no duplicated rows", () 
   expect(new Set(labels).size).toBe(labels.length);
 });
 
-test("the hero video uses the rendition Wix actually serves", () => {
-  // 720p and 1080p answer 403 for this upload; only 480p and below exist.
-  expect(THALIA_VIDEO_URL).toMatch(/^https:\/\/video\.wixstatic\.com\/video\/[^/]+\/480p\/mp4\/file\.mp4$/);
+/** Width x height of the first track in an mp4, read from its `tkhd` box (version 0). */
+function mp4Dimensions(file: string): { width: number; height: number } {
+  const buf = readFileSync(file);
+  const at = buf.indexOf("tkhd");
+  // Past the box type: 4 version/flags + 20 times/ids + 8 reserved + 8 layer..volume + 36 matrix.
+  const dims = at + 4 + 4 + 20 + 8 + 8 + 36;
+  return { width: buf.readUInt32BE(dims) >>> 16, height: buf.readUInt32BE(dims + 4) >>> 16 };
+}
+
+const publicFile = (src: string) => path.join(__dirname, "..", "..", "public", src);
+
+test("every reel variant exists at the width it declares, in 9:16", () => {
+  for (const { src, width } of THALIA_REEL_VARIANTS) {
+    const dims = mp4Dimensions(publicFile(src));
+    expect(dims.width, src).toBe(width);
+    expect(dims.height, src).toBe(Math.round((width * 16) / 9));
+  }
+});
+
+test("reel variants stay within their weight budget", () => {
+  // 19 s with sound. The phones that pick the 1080p file are often on mobile data.
+  const budgetMb: Record<number, number> = { 720: 10, 1080: 16 };
+  for (const { src, width } of THALIA_REEL_VARIANTS) {
+    const mb = statSync(publicFile(src)).size / 1024 / 1024;
+    expect(mb, `${src} is ${mb.toFixed(1)} MB`).toBeLessThanOrEqual(budgetMb[width]);
+  }
+});
+
+test("reel files keep moov up front so playback starts before the download ends", () => {
+  for (const { src } of THALIA_REEL_VARIANTS) {
+    const head = readFileSync(publicFile(src)).subarray(0, 4096);
+    expect(head.indexOf("moov"), src).toBeGreaterThan(-1);
+  }
+});
+
+test("the reel poster exists and is light", () => {
+  const kb = statSync(publicFile(THALIA_REEL_POSTER)).size / 1024;
+  expect(kb).toBeLessThanOrEqual(400);
 });
