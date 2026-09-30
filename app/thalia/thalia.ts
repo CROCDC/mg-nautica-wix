@@ -9,6 +9,8 @@ export { THALIA_PRODUCT_SLUG } from "@/lib/landings";
 // If the listing changes (price above all), this file has to follow.
 
 export const THALIA_PRICE_USD = 35000;
+export const THALIA_LOCATION = "Riachuelo, Colonia del Sacramento, Uruguay";
+export const THALIA_FLAG = "Argentina";
 
 export const THALIA_WHATSAPP_URL =
   "https://wa.me/5491126949628?text=" +
@@ -142,6 +144,8 @@ export const HIGHLIGHTS = [
 export const SPECS: { label: string; value: string }[] = [
   { label: "Año", value: "1931" },
   { label: "Tipo", value: "Motovelero" },
+  { label: "Bandera", value: THALIA_FLAG },
+  { label: "Ubicación", value: THALIA_LOCATION },
   { label: "Material del casco", value: "Madera" },
   { label: "Constructor", value: "Parodi" },
   { label: "Diseño", value: "Campos" },

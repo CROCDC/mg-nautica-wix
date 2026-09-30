@@ -36,7 +36,8 @@ test("visitor reaches the catalog from the home hero", async ({ page }) => {
 
 test("visitor opens a boat from the home featured grid", async ({ page }) => {
   await page.goto("/");
-  const firstCard = page.locator(".boat-card").first();
+  // Boats with a landing page (lib/landings.ts) link there instead of to their listing.
+  const firstCard = page.locator('.boat-card[href^="/product-page/"]').first();
   const name = (await firstCard.locator(".boat-card-title").textContent())?.trim() ?? "";
   expect(name).not.toBe("");
 
@@ -48,7 +49,7 @@ test("visitor opens a boat from the home featured grid", async ({ page }) => {
 
 test("visitor opens a boat from the catalog grid", async ({ page }) => {
   await gotoCatalog(page);
-  const card = page.locator(".boat-card").first();
+  const card = page.locator('.boat-card[href^="/product-page/"]').first();
   const name = (await card.locator(".boat-card-title").textContent())?.trim() ?? "";
   const price = (await card.locator(".boat-card-price").textContent())?.trim() ?? "";
 

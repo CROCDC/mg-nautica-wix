@@ -12,6 +12,8 @@ import {
   KEY_STATS,
   PHOTOS,
   SPECS,
+  THALIA_FLAG,
+  THALIA_LOCATION,
   THALIA_PRICE_USD,
   THALIA_PRODUCT_SLUG,
   THALIA_REEL_POSTER,
@@ -22,7 +24,7 @@ import {
 
 const TITLE = "Thalia — Motovelero clásico de madera de 1931";
 const DESCRIPTION =
-  "Thalia, motovelero clásico de madera de 1931 con aparejo cutter, refit integral y cubierta de teca. 10,05 m de eslora, motor Volvo Penta 43 HP. En venta con MG Náutica.";
+  "Thalia, motovelero clásico de madera de 1931 con aparejo cutter, refit integral y cubierta de teca. 10,05 m de eslora, motor Volvo Penta 43 HP, bandera argentina. En Riachuelo, Colonia del Sacramento. En venta con MG Náutica.";
 
 // Absolute on purpose: Meta's bot rejects relative og:image URLs (see app/layout.tsx).
 const OG_IMAGE = wixImageUrl(PHOTOS.aerial, 1200, 630, { q: 82 });
@@ -100,6 +102,23 @@ export default function ThaliaLanding() {
               <span className="bl-hero-price-label">Precio</span>
               <span className="bl-hero-price-value">{PRICE}</span>
             </div>
+            <ul className="bl-hero-facts">
+              <li>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                  <path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z" />
+                </svg>
+                <span>
+                  <span className="bl-sr">Ubicación: </span>
+                  {THALIA_LOCATION}
+                </span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true">
+                  <path d="M5 2h2v20H5zM8 3h11l-2.5 4.5L19 12H8z" />
+                </svg>
+                <span>Bandera {THALIA_FLAG.toLowerCase()}</span>
+              </li>
+            </ul>
             <div className="hero-ctas">
               <a className="btn btn-primary btn-lg" href={THALIA_WHATSAPP_URL} target="_blank" rel="noopener">
                 💬 Consultar por WhatsApp

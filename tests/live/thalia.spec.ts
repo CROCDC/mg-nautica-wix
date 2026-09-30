@@ -26,6 +26,20 @@ test("the Thalia listing still exists and links to its landing", async ({ page }
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Thalia");
 });
 
+// The cassette predates the Thalia listing, so only the live catalog can show its card.
+for (const path of ["/category/all-products", "/"]) {
+  test(`the Thalia card on ${path} opens the landing`, async ({ page }) => {
+    await page.goto(path);
+    const card = page.locator(".boat-card").filter({ hasText: /THALIA/i });
+    test.skip((await card.count()) === 0, `Thalia is not featured on ${path} right now`);
+
+    await expect(card.first()).toHaveAttribute("href", "/thalia");
+    await card.first().click();
+    await page.waitForURL("**/thalia");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Thalia");
+  });
+}
+
 test("the landing price still matches the live listing", async ({ page }) => {
   await page.goto(`/product-page/${encodeURIComponent(THALIA_PRODUCT_SLUG)}`);
   const listed = (await page.locator(".sidebar-price").textContent())?.trim();

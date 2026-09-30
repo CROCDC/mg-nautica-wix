@@ -2,13 +2,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { type Boat, formatUsd } from "@/lib/wix";
 import { wixImageUrl } from "@/lib/wix-image";
+import { boatHref } from "@/lib/landings";
 
 export default function BoatCard({ boat }: { boat: Boat }) {
   const typeTag = boat.tags.find((t) => t.kind === "type");
   const place = boat.tags.filter((t) => t.kind === "flag" || t.kind === "region");
 
   return (
-    <Link className="boat-card" href={`/product-page/${boat.slug}`}>
+    <Link className="boat-card" href={boatHref(boat.slug)}>
       <div className="boat-card-img">
         {boat.mainImage ? (
           <Image
