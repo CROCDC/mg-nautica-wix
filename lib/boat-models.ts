@@ -74,6 +74,21 @@ export const BOAT_MODELS: BoatModel[] = [
 
 const BY_SLUG = new Map(BOAT_MODELS.map((m) => [m.slug, m]));
 
+/**
+ * Offered before the visitor types anything, so the form never opens on a blank: the
+ * families the catalog lists most often, plus the two that were asked for by name.
+ */
+export const SUGGESTED_MODELS: BoatModel[] = [
+  "plenamar",
+  "limbo",
+  "pandora",
+  "miura",
+  "bramador",
+  "kripton",
+  "colibri",
+  "bries",
+].map((slug) => BY_SLUG.get(slug)!);
+
 /** Read the submitted slugs. Unknown ones are dropped, like a junk `?type=`; dupes too. */
 export function parseModels(raw: readonly string[]): BoatModel[] {
   const seen = new Set<string>();

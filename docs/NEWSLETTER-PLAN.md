@@ -49,9 +49,9 @@ desde el panel de Wix).
 | `lib/newsletter-form.ts` | Validación pura del formulario (email, modelos, honeypot). Testeable sin servidor. |
 | `lib/newsletter.ts` | `server-only`. Cliente Wix con `ApiKeyStrategy` + `subscribe()` (pasos 1–4). |
 | `app/newsletter/actions.ts` | Server Action: valida, llama a `subscribe()`, devuelve el estado del form. |
-| `app/newsletter/page.tsx` | Página `/newsletter` (banner + formulario). |
-| `components/NewsletterForm.tsx` | Form cliente con `useActionState`: email, buscador de modelos, chips agrupados, mensajes. |
-| `app/page.tsx` | Bloque "Alertas por modelo" en la home con botón a `/newsletter`. |
+| `app/newsletter/page.tsx` | Página `/newsletter`: banner, formulario y columna "Cómo funciona". Lee `?modelo=` (repetible) para llegar con modelos ya elegidos. |
+| `components/NewsletterForm.tsx` | Tarjeta en 2 pasos: (1) modelos — buscador, 8 sugeridos, lista completa plegable y las alertas elegidas como etiquetas; (2) email + "Activar alertas" en una fila. Confirmación con foco. |
+| `app/page.tsx` | Tarjeta "¿No está el barco que buscás?" al cierre de *Últimos ingresos*: modelos que abren `/newsletter?modelo=…` y botón "Crear mi alerta". |
 | `components/Footer.tsx` | Link "Newsletter" en la columna Empresa. |
 | `app/main.css` | Estilos de chips/form del newsletter (mismo sistema navy/gold). |
 | `.env.example` / `README.md` | Permisos que necesita la API key. |
@@ -63,7 +63,8 @@ desde el panel de Wix).
   de email, honeypot, tope de largo.
 - **E2E** (`tests/e2e-newsletter.spec.ts`): alta feliz, email que el navegador acepta pero el
   servidor no (`a@b`), contacto ya existente (409 → igual queda suscripto), Wix caído (mensaje de
-  error y los modelos siguen elegidos), buscador de modelos, y versión 375px.
+  error y los modelos siguen elegidos), buscador (Enter con un resultado lo elige), lista completa,
+  quitar etiquetas, preselección por URL, entradas desde la home y versión 375px.
 - **Mock de Wix**: los endpoints de **escritura** del CRM se **simulan** en
   `tests/mock/wix-http-mock.mjs` (nunca se graban: grabarlos crearía contactos reales en el CRM
   del dueño). Emails especiales disparan los casos borde (`existente@…` → 409, `falla@…` → 500).
@@ -83,8 +84,8 @@ Sin la API key el sitio funciona igual; el form muestra "no disponible por ahora
 - **Aviso automático** cuando entra un barco: webhook de producto creado en Wix → buscar
   contactos con la etiqueta del modelo → disparar campaña/automatización. Requiere decidir cómo
   mapear el nombre de la publicación a un modelo (hoy el dueño escribe "VELERO PLENAMAR 23 | …").
-- Preselección por URL (`/newsletter?modelo=plenamar`) para linkear desde fichas de producto y
-  desde un catálogo filtrado sin resultados ("¿No está tu modelo? Avisame").
+- Linkear `/newsletter?modelo=…` (ya soportado) desde fichas de producto y desde un catálogo
+  filtrado sin resultados ("¿No está tu modelo? Avisame").
 - Campo "Otro modelo" en texto libre (como nota del contacto) para modelos que no están en la lista.
 - Rate-limit por IP (Vercel Firewall) si aparece spam pese al honeypot.
 - Doble opt-in si Wix lo exige para la cuenta.

@@ -13,6 +13,7 @@ import {
   matchesModel,
   modelLabel,
   parseModels,
+  SUGGESTED_MODELS,
 } from "@/lib/boat-models";
 
 const bySlug = (slug: string) => BOAT_MODELS.find((m) => m.slug === slug)!;
@@ -73,4 +74,14 @@ test("search ignores accents and case", () => {
 
 test("an empty search shows everything", () => {
   expect(BOAT_MODELS.every((m) => matchesModel(m, ""))).toBe(true);
+});
+
+test("every suggested model is on the list", () => {
+  // SUGGESTED_MODELS resolves slugs by lookup; a typo there would hand the form an
+  // undefined chip rather than fail loudly.
+  expect(SUGGESTED_MODELS.length).toBeGreaterThan(0);
+  for (const m of SUGGESTED_MODELS) expect(BOAT_MODELS).toContain(m);
+  expect(SUGGESTED_MODELS.map((m) => m.slug)).toEqual(
+    expect.arrayContaining(["colibri", "bries"]),
+  );
 });

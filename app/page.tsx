@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getAllBoats, type Boat } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 import CountUp from "@/components/CountUp";
+import { SUGGESTED_MODELS } from "@/lib/boat-models";
 
 // Always fetch the latest catalog from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -97,28 +98,50 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Featured boats — latest from Wix */}
-      {featured.length > 0 && (
-        <section className="section">
-          <div className="container">
-            <div className="section-head">
-              <span className="section-eyebrow">Catálogo</span>
-              <h2>Últimos ingresos</h2>
-              <p>Embarcaciones seleccionadas disponibles en Argentina, Uruguay y el exterior.</p>
+      {/* Featured boats — latest from Wix — and the model alerts that pick up where they end */}
+      <section className="section">
+        <div className="container">
+          {featured.length > 0 && (
+            <>
+              <div className="section-head">
+                <span className="section-eyebrow">Catálogo</span>
+                <h2>Últimos ingresos</h2>
+                <p>Embarcaciones seleccionadas disponibles en Argentina, Uruguay y el exterior.</p>
+              </div>
+              <div className="boat-grid">
+                {featured.map((boat) => (
+                  <BoatCard key={boat.id} boat={boat} />
+                ))}
+              </div>
+              <div style={{ textAlign: "center", marginTop: "2rem" }}>
+                <Link className="btn btn-navy btn-lg" href="/category/all-products">
+                  Ver todas las embarcaciones
+                </Link>
+              </div>
+            </>
+          )}
+
+          <div className="nl-promo">
+            <div>
+              <span className="section-eyebrow">Alertas por modelo</span>
+              <h2>¿No está el barco que buscás?</h2>
+              <p>Elegí el modelo y te escribimos apenas ingrese uno al catálogo.</p>
             </div>
-            <div className="boat-grid">
-              {featured.map((boat) => (
-                <BoatCard key={boat.id} boat={boat} />
-              ))}
-            </div>
-            <div style={{ textAlign: "center", marginTop: "2rem" }}>
-              <Link className="btn btn-navy btn-lg" href="/category/all-products">
-                Ver todas las embarcaciones
+            <div className="nl-promo-actions">
+              <div className="nl-promo-chips">
+                {SUGGESTED_MODELS.slice(0, 5).map((m) => (
+                  <Link key={m.slug} className="nl-promo-chip" href={`/newsletter?modelo=${m.slug}`}>
+                    {m.label}
+                  </Link>
+                ))}
+              </div>
+              <Link className="btn btn-primary btn-lg" href="/newsletter">
+                Crear mi alerta
               </Link>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Services */}
       <section className="section section-surface">
@@ -145,23 +168,6 @@ export default async function Home() {
               Ver todos los servicios
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* Newsletter — model alerts */}
-      <section className="section">
-        <div className="container newsletter-cta">
-          <div className="section-head">
-            <span className="section-eyebrow">Alertas por modelo</span>
-            <h2>¿Buscás un modelo en particular?</h2>
-            <p>
-              Dejanos tu email, elegí los modelos que te interesan (Colibrí, Plenamar, Limbo…) y
-              te avisamos cuando ingrese uno.
-            </p>
-          </div>
-          <Link className="btn btn-navy btn-lg" href="/newsletter">
-            Suscribirme al newsletter
-          </Link>
         </div>
       </section>
 

@@ -6,92 +6,100 @@
  * model, and an email subscription set to SUBSCRIBED — because that is what the owner
  * segments a campaign by. The mock fakes those CRM writes and logs them (see
  * fakeCrmWrite in mock/wix-http-mock.mjs), so each test reads back what was sent.
+ *
+ * Three controls pick a model — the suggested/search chips, the full checkbox list and
+ * the remove buttons on the tags — and they all drive the same state. The checkboxes
+ * are what submits, even while their list is folded away, so the flows below pick
+ * through the chips and assert on what Wix received.
  */
 
 import { test, expect, type Page } from "./fixtures";
 import { readWixWrites, uniqueEmail } from "./helpers/wix-writes";
 
 const chip = (page: Page, label: string) =>
-  page.locator(".model-chip").filter({ hasText: new RegExp(`^${label}$`) });
-
-const submit = (page: Page) => page.getByRole("button", { name: "Suscribirme" }).click();
+  page.locator(".nl-chip").filter({ hasText: new RegExp(`^${label}$`) });
+const tags = (page: Page) => page.locator(".nl-tag-name");
+const search = (page: Page) => page.getByLabel("Buscar modelo");
+const email = (page: Page) => page.getByLabel("Tu email");
+const submit = (page: Page) => page.getByRole("button", { name: "Activar alertas" }).click();
 
 // By class rather than role: Next's route announcer is also a role="alert" in the page.
-const done = (page: Page) => page.locator(".newsletter-done");
+const done = (page: Page) => page.locator(".nl-done");
 const failure = (page: Page) => page.locator(".alert-error");
 
 /** The createContact request the app sent for this address, if any. */
-function contactWrite(email: string) {
+function contactWrite(address: string) {
   return readWixWrites().find(
     (w) =>
       w.path.endsWith("/contacts/v4/contacts") &&
-      JSON.stringify(w.body).includes(`"email":"${email}"`),
+      JSON.stringify(w.body).includes(`"email":"${address}"`),
   );
 }
 
-function subscriptionWrite(email: string) {
+function subscriptionWrite(address: string) {
   return readWixWrites().find(
     (w) =>
       w.path.endsWith("/email-subscriptions") &&
-      JSON.stringify(w.body).includes(`"email":"${email}"`),
+      JSON.stringify(w.body).includes(`"email":"${address}"`),
   );
 }
 
 // ----- The happy path -----------------------------------------------------------
 
-test("visitor subscribes following two models", async ({ page }) => {
-  const email = uniqueEmail();
+test("visitor follows two suggested models and subscribes", async ({ page }) => {
+  const address = uniqueEmail();
   await page.goto("/newsletter");
 
-  await page.getByLabel("Tu email").fill(email);
   await chip(page, "Colibrí").click();
   await chip(page, "Bries").click();
-  await expect(page.getByText("2 modelos elegidos.")).toBeVisible();
+  await expect(chip(page, "Colibrí")).toHaveAttribute("aria-pressed", "true");
+  // Tags follow the list order — the order the form submits in.
+  await expect(tags(page)).toHaveText(["Bries", "Colibrí"]);
+  await email(page).fill(address);
   await submit(page);
 
-  await expect(done(page)).toContainText("ya estás suscripto");
-  // The form posts the chips in list order, not in the order they were tapped.
-  await expect(done(page)).toContainText("cuando ingrese un Bries o Colibrí");
+  await expect(done(page)).toContainText("Tus alertas están activas");
+  await expect(done(page)).toContainText("apenas ingrese un Bries o Colibrí");
+  await expect(done(page)).toBeFocused();
 
-  const contact = contactWrite(email);
-  expect(contact?.body).toMatchObject({
+  expect(contactWrite(address)?.body).toMatchObject({
     info: {
-      emails: { items: [{ email, tag: "MAIN" }] },
+      emails: { items: [{ email: address, tag: "MAIN" }] },
       labelKeys: { items: ["custom.newsletter", "custom.modelo-bries", "custom.modelo-colibri"] },
     },
   });
-  expect(subscriptionWrite(email)?.body).toEqual({
-    subscription: { email, subscriptionStatus: "SUBSCRIBED" },
+  expect(subscriptionWrite(address)?.body).toEqual({
+    subscription: { email: address, subscriptionStatus: "SUBSCRIBED" },
   });
 });
 
 test("subscribing without picking models still subscribes", async ({ page }) => {
-  const email = uniqueEmail();
+  const address = uniqueEmail();
   await page.goto("/newsletter");
 
-  await expect(page.getByText("Sin elegir modelos recibís todas las novedades.")).toBeVisible();
-  await page.getByLabel("Tu email").fill(email);
+  await expect(page.getByText("Todavía no elegiste modelos.")).toBeVisible();
+  await email(page).fill(address);
   await submit(page);
 
   await expect(done(page)).toContainText("novedades del catálogo");
-  expect(contactWrite(email)?.body).toMatchObject({
+  expect(contactWrite(address)?.body).toMatchObject({
     info: { labelKeys: { items: ["custom.newsletter"] } },
   });
-  expect(subscriptionWrite(email)).toBeTruthy();
+  expect(subscriptionWrite(address)).toBeTruthy();
 });
 
 test("an email already in the CRM gets the new models added", async ({ page }) => {
   // The mock answers "existente-…" with Wix's 409 DUPLICATE_CONTACT_EXISTS.
-  const email = uniqueEmail("existente");
+  const address = uniqueEmail("existente");
   await page.goto("/newsletter");
 
-  await page.getByLabel("Tu email").fill(email);
   await chip(page, "Plenamar").click();
+  await email(page).fill(address);
   await submit(page);
 
-  await expect(done(page)).toContainText("cuando ingrese un Plenamar");
+  await expect(done(page)).toContainText("apenas ingrese un Plenamar");
 
-  const create = contactWrite(email);
+  const create = contactWrite(address);
   expect(create?.status).toBe(409);
   const existingId = (
     create?.response as { details: { applicationError: { data: { duplicateContactId: string } } } }
@@ -101,54 +109,82 @@ test("an email already in the CRM gets the new models added", async ({ page }) =
   expect(labelled?.body).toMatchObject({
     labelKeys: ["custom.newsletter", "custom.modelo-plenamar"],
   });
-  expect(subscriptionWrite(email)).toBeTruthy();
+  expect(subscriptionWrite(address)).toBeTruthy();
 });
 
-// ----- The model search ---------------------------------------------------------
+// ----- Finding a model ------------------------------------------------------------
 
-test("search narrows the chips, accents optional", async ({ page }) => {
+test("search swaps the suggestions for matches, accents optional", async ({ page }) => {
   await page.goto("/newsletter");
+  await expect(page.locator(".nl-options .nl-label")).toHaveText("Sugeridos");
 
-  await page.getByLabel("Buscar modelo").fill("colibri");
+  await search(page).fill("chaparron");
 
-  await expect(page.locator(".model-chip:visible")).toHaveCount(1);
-  await expect(chip(page, "Colibrí")).toBeVisible();
-  // The "A motor" group has nothing to show, so its heading goes too.
-  await expect(page.getByRole("heading", { name: "A motor" })).toBeHidden();
+  await expect(page.locator(".nl-options .nl-label")).toHaveText("Resultados");
+  await expect(page.locator(".nl-chip")).toHaveText(["Chaparrón"]);
 });
 
-test("a model hidden by the search is still submitted", async ({ page }) => {
-  // The chips are hidden, not unmounted, precisely so this keeps working.
-  const email = uniqueEmail();
+test("Enter on a single match picks it and clears the search", async ({ page }) => {
   await page.goto("/newsletter");
 
-  await page.getByLabel("Tu email").fill(email);
-  await chip(page, "Colibrí").click();
-  await page.getByLabel("Buscar modelo").fill("limbo");
-  await expect(chip(page, "Colibrí")).toBeHidden();
-  await submit(page);
+  await search(page).fill("colibri");
+  await search(page).press("Enter");
 
-  await expect(done(page)).toContainText("Colibrí");
-  expect(JSON.stringify(contactWrite(email)?.body)).toContain("custom.modelo-colibri");
-});
-
-test("Enter in the search box searches instead of subscribing", async ({ page }) => {
-  await page.goto("/newsletter");
-
-  await page.getByLabel("Tu email").fill(uniqueEmail());
-  await page.getByLabel("Buscar modelo").fill("limbo");
-  await page.getByLabel("Buscar modelo").press("Enter");
-
-  await expect(page.getByRole("button", { name: "Suscribirme" })).toBeVisible();
+  await expect(tags(page)).toHaveText(["Colibrí"]);
+  await expect(search(page)).toHaveValue("");
+  // Enter never submits the form from the search box.
   await expect(done(page)).toHaveCount(0);
+  await expect(failure(page)).toHaveCount(0);
+});
+
+test("Enter with several matches does nothing but stay in the search", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await search(page).fill("pa");
+  await search(page).press("Enter");
+
+  await expect(search(page)).toHaveValue("pa");
+  await expect(page.getByText("Todavía no elegiste modelos.")).toBeVisible();
 });
 
 test("a search with no match says so", async ({ page }) => {
   await page.goto("/newsletter");
 
-  await page.getByLabel("Buscar modelo").fill("zzz");
+  await search(page).fill("zzz");
 
-  await expect(page.getByText("No tenemos ese modelo en la lista.")).toBeVisible();
+  await expect(page.getByText("No encontramos ese modelo.")).toBeVisible();
+});
+
+test("the full list reaches a model that is not suggested", async ({ page }) => {
+  const address = uniqueEmail();
+  await page.goto("/newsletter");
+
+  await page.getByText(/Ver los \d+ modelos/).click();
+  await page.getByRole("checkbox", { name: "Trento" }).check();
+  await expect(tags(page)).toHaveText(["Trento"]);
+  await email(page).fill(address);
+  await submit(page);
+
+  await expect(done(page)).toContainText("apenas ingrese un Trento");
+  expect(JSON.stringify(contactWrite(address)?.body)).toContain("custom.modelo-trento");
+});
+
+test("removing a tag unpicks the model everywhere", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await chip(page, "Limbo").click();
+  await page.getByRole("button", { name: "Quitar Limbo" }).click();
+
+  await expect(tags(page)).toHaveCount(0);
+  await expect(chip(page, "Limbo")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("checkbox", { name: "Limbo", includeHidden: true })).not.toBeChecked();
+});
+
+test("a model in the URL arrives already picked; junk is ignored", async ({ page }) => {
+  await page.goto("/newsletter?modelo=plenamar&modelo=no-existe");
+
+  await expect(tags(page)).toHaveText(["Plenamar"]);
+  await expect(chip(page, "Plenamar")).toHaveAttribute("aria-pressed", "true");
 });
 
 // ----- Failures keep what the visitor entered ------------------------------------
@@ -158,54 +194,64 @@ test("an address the browser accepts but the server rejects keeps the form", asy
   // and React resets a form after an action, which must not wipe the picks.
   await page.goto("/newsletter");
 
-  await page.getByLabel("Tu email").fill("nombre@dominio");
   await chip(page, "Limbo").click();
+  await email(page).fill("nombre@dominio");
   await submit(page);
 
   await expect(failure(page)).toContainText("no parece válido");
-  await expect(page.getByLabel("Tu email")).toHaveValue("nombre@dominio");
-  await expect(chip(page, "Limbo").locator("input")).toBeChecked();
+  await expect(email(page)).toHaveValue("nombre@dominio");
+  await expect(tags(page)).toHaveText(["Limbo"]);
 });
 
 test("Wix failing shows a retry message and keeps the picks", async ({ page }) => {
   // The mock answers "falla-…" with a 500.
-  const email = uniqueEmail("falla");
+  const address = uniqueEmail("falla");
   await page.goto("/newsletter");
 
-  await page.getByLabel("Tu email").fill(email);
   await chip(page, "Bries").click();
+  await email(page).fill(address);
   await submit(page);
 
   await expect(failure(page)).toContainText("Probá de nuevo");
-  await expect(page.getByLabel("Tu email")).toHaveValue(email);
-  await expect(chip(page, "Bries").locator("input")).toBeChecked();
-  expect(subscriptionWrite(email)).toBeUndefined();
+  await expect(email(page)).toHaveValue(address);
+  await expect(tags(page)).toHaveText(["Bries"]);
+  expect(subscriptionWrite(address)).toBeUndefined();
 });
 
 // ----- Bots -----------------------------------------------------------------------
 
 test("a filled honeypot looks like success and never reaches Wix", async ({ page }) => {
-  const email = uniqueEmail();
+  const address = uniqueEmail();
   await page.goto("/newsletter");
 
-  await page.getByLabel("Tu email").fill(email);
+  await email(page).fill(address);
   await page.locator('input[name="website"]').fill("https://spam.example");
   await submit(page);
 
-  await expect(done(page)).toContainText("ya estás suscripto");
-  expect(contactWrite(email)).toBeUndefined();
-  expect(subscriptionWrite(email)).toBeUndefined();
+  await expect(done(page)).toContainText("Tus alertas están activas");
+  expect(contactWrite(address)).toBeUndefined();
+  expect(subscriptionWrite(address)).toBeUndefined();
 });
 
 // ----- Ways in --------------------------------------------------------------------
 
-test("the home page leads to the newsletter", async ({ page }) => {
+test("a model on the home promo opens the form with it picked", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("link", { name: "Suscribirme al newsletter" }).click();
+  await page.locator(".nl-promo").getByRole("link", { name: "Plenamar" }).click();
 
-  await page.waitForURL("**/newsletter");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Newsletter");
+  await page.waitForURL("**/newsletter?modelo=plenamar");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Alertas por modelo");
+  await expect(tags(page)).toHaveText(["Plenamar"]);
+});
+
+test("the home promo button opens an empty form", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("link", { name: "Crear mi alerta" }).click();
+
+  await page.waitForURL(/\/newsletter$/);
+  await expect(page.getByText("Todavía no elegiste modelos.")).toBeVisible();
 });
 
 // ----- Phone ------------------------------------------------------------------------
@@ -213,15 +259,30 @@ test("the home page leads to the newsletter", async ({ page }) => {
 test.describe("on a 375px phone", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
-  test("the chips wrap inside the screen and can be tapped", async ({ page }) => {
+  test("chips, email and button all fit the screen", async ({ page }) => {
     await page.goto("/newsletter");
 
     await chip(page, "Colibrí").click();
+    await expect(tags(page)).toHaveText(["Colibrí"]);
 
-    await expect(chip(page, "Colibrí").locator("input")).toBeChecked();
+    for (const target of [email(page), page.getByRole("button", { name: "Activar alertas" })]) {
+      const box = await target.boundingBox();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(376);
+    }
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBe(0);
+  });
+
+  test("the confirmation scrolls into view after subscribing", async ({ page }) => {
+    await page.goto("/newsletter");
+
+    await chip(page, "Colibrí").click();
+    await email(page).fill(uniqueEmail());
+    await submit(page);
+
+    await expect(done(page)).toBeInViewport();
   });
 });
