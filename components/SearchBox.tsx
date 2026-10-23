@@ -72,7 +72,10 @@ export default function SearchBox({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder="Nombre del barco…"
-            style={{ flex: 1 }}
+            // An input's flex minimum is its intrinsic ~20-character width, which depends
+            // on the font: with a wider fallback (web font not loaded) it pushed Buscar
+            // past the right edge at 375px. minWidth 0 lets it shrink, as the price inputs do.
+            style={{ flex: 1, minWidth: 0 }}
           />
           <button type="submit" className="btn btn-sm btn-navy">
             Buscar
