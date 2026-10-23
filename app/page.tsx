@@ -3,7 +3,6 @@ import Image from "next/image";
 import { getAllBoats, type Boat } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 import CountUp from "@/components/CountUp";
-import { SUGGESTED_MODELS } from "@/lib/boat-models";
 
 // Always fetch the latest catalog from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -125,20 +124,11 @@ export default async function Home() {
             <div>
               <span className="section-eyebrow">Alertas por modelo</span>
               <h2>¿No está el barco que buscás?</h2>
-              <p>Elegí el modelo y te escribimos apenas ingrese uno al catálogo.</p>
+              <p>Decinos qué modelos buscás y te escribimos apenas ingrese uno al catálogo.</p>
             </div>
-            <div className="nl-promo-actions">
-              <div className="nl-promo-chips">
-                {SUGGESTED_MODELS.slice(0, 5).map((m) => (
-                  <Link key={m.slug} className="nl-promo-chip" href={`/newsletter?modelo=${m.slug}`}>
-                    {m.label}
-                  </Link>
-                ))}
-              </div>
-              <Link className="btn btn-primary btn-lg" href="/newsletter">
-                Crear mi alerta
-              </Link>
-            </div>
+            <Link className="btn btn-primary btn-lg" href="/newsletter">
+              Crear mi alerta
+            </Link>
           </div>
         </div>
       </section>

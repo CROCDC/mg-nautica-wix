@@ -8,24 +8,8 @@ export const metadata: Metadata = {
     "Elegí los modelos de barco que buscás y dejanos tu email: MG Náutica te escribe apenas ingresa uno al catálogo.",
 };
 
-const WHATSAPP_URL =
-  "https://wa.me/5491126949628?text=" +
-  encodeURIComponent("Hola! Estoy buscando un modelo de barco en particular.");
-
-const STEPS = [
-  {
-    title: "Elegí tus modelos",
-    body: "Buscalos por nombre o recorré la lista completa. Podés seguir todos los que quieras.",
-  },
-  { title: "Dejanos tu email", body: "Es lo único que te pedimos." },
-  {
-    title: "Te avisamos",
-    body: "Cuando ingresa al catálogo uno de tus modelos, te escribimos con la publicación.",
-  },
-];
-
-// `?modelo=plenamar` (repeatable) arrives already picked — the home page's model links
-// land here. Unknown slugs are dropped, like any other junk parameter.
+// `?modelo=plenamar` (repeatable) arrives already picked, so a link can open the form
+// on a model. Unknown slugs are dropped, like any other junk parameter.
 export default async function Newsletter({
   searchParams,
 }: {
@@ -40,40 +24,14 @@ export default async function Newsletter({
         <div className="container">
           <span className="section-eyebrow">Newsletter</span>
           <h1>Alertas por modelo</h1>
-          <p>Elegí los modelos que buscás y te escribimos apenas ingrese uno al catálogo.</p>
+          <p>Elegí los barcos que buscás y te escribimos apenas ingrese uno al catálogo.</p>
         </div>
       </div>
 
       <section className="section">
-        <div className="container nl-layout">
+        <div className="container nl-wrap">
           {/* Keyed so arriving with a different ?modelo= starts from that pick. */}
           <NewsletterForm key={initial.join(",")} initialModels={initial} />
-
-          <aside className="nl-aside">
-            <h2>Cómo funciona</h2>
-            <ol className="step-list">
-              {STEPS.map((s) => (
-                <li key={s.title}>
-                  <div>
-                    <strong>{s.title}</strong>
-                    <p>{s.body}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <div className="nl-note">
-              <p>
-                <strong>Sin spam.</strong> Solo embarcaciones y novedades de MG Náutica.
-              </p>
-              <p>
-                ¿Buscás algo muy puntual?{" "}
-                <a href={WHATSAPP_URL} target="_blank" rel="noopener">
-                  Escribinos por WhatsApp
-                </a>
-                .
-              </p>
-            </div>
-          </aside>
         </div>
       </section>
     </>

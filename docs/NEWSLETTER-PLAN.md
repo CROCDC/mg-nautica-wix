@@ -45,13 +45,13 @@ desde el panel de Wix).
 
 | Archivo | Qué |
 |---|---|
-| `lib/boat-models.ts` | Lista curada `BOAT_MODELS` (slug, nombre, grupo), `parseModels()`, `modelLabel()`. Sin `server-only`: el form cliente la usa. |
+| `lib/boat-models.ts` | Lista curada `BOAT_MODELS` (slug, nombre; veleros y motor juntos), `parseModels()`, `modelLabel()` y `suggestModels()` (sugerencias mientras se escribe). Sin `server-only`: el form cliente la usa. |
 | `lib/newsletter-form.ts` | Validación pura del formulario (email, modelos, honeypot). Testeable sin servidor. |
 | `lib/newsletter.ts` | `server-only`. Cliente Wix con `ApiKeyStrategy` + `subscribe()` (pasos 1–4). |
 | `app/newsletter/actions.ts` | Server Action: valida, llama a `subscribe()`, devuelve el estado del form. |
-| `app/newsletter/page.tsx` | Página `/newsletter`: banner, formulario y columna "Cómo funciona". Lee `?modelo=` (repetible) para llegar con modelos ya elegidos. |
-| `components/NewsletterForm.tsx` | Tarjeta en 2 pasos: (1) modelos — buscador, 8 sugeridos, lista completa plegable y las alertas elegidas como etiquetas; (2) email + "Activar alertas" en una fila. Confirmación con foco. |
-| `app/page.tsx` | Tarjeta "¿No está el barco que buscás?" al cierre de *Últimos ingresos*: modelos que abren `/newsletter?modelo=…` y botón "Crear mi alerta". |
+| `app/newsletter/page.tsx` | Página `/newsletter`: banner y formulario. Lee `?modelo=` (repetible) para llegar con modelos ya agregados. |
+| `components/NewsletterForm.tsx` | Form compacto: un campo predictivo (combobox) que sugiere modelos según lo que se escribe y los agrega como etiquetas — varias embarcaciones —, más email + "Activar alertas". Confirmación con foco. |
+| `app/page.tsx` | Tarjeta "¿No está el barco que buscás?" al cierre de *Últimos ingresos*, con botón "Crear mi alerta". |
 | `components/Footer.tsx` | Link "Newsletter" en la columna Empresa. |
 | `app/main.css` | Estilos de chips/form del newsletter (mismo sistema navy/gold). |
 | `.env.example` / `README.md` | Permisos que necesita la API key. |
@@ -59,12 +59,14 @@ desde el panel de Wix).
 ## 4. Tests
 
 - **Unit** (`tests/unit/boat-models.spec.ts`, `tests/unit/newsletter-form.spec.ts`): lista sin
-  slugs repetidos, incluye Colibrí y Bries, `parseModels` ignora basura y duplicados; validación
-  de email, honeypot, tope de largo.
+  slugs repetidos, incluye Colibrí y Bries, `parseModels` ignora basura y duplicados, orden de
+  las sugerencias (empieza con > palabra que empieza con > contiene); validación de email,
+  honeypot, tope de largo.
 - **E2E** (`tests/e2e-newsletter.spec.ts`): alta feliz, email que el navegador acepta pero el
   servidor no (`a@b`), contacto ya existente (409 → igual queda suscripto), Wix caído (mensaje de
-  error y los modelos siguen elegidos), buscador (Enter con un resultado lo elige), lista completa,
-  quitar etiquetas, preselección por URL, entradas desde la home y versión 375px.
+  error y los modelos siguen elegidos), campo predictivo (sugerencias, flechas + Enter, click,
+  Escape, sin repetidos, quitar con ✕ o Backspace), preselección por URL, entrada desde la home y
+  versión 375px.
 - **Mock de Wix**: los endpoints de **escritura** del CRM se **simulan** en
   `tests/mock/wix-http-mock.mjs` (nunca se graban: grabarlos crearía contactos reales en el CRM
   del dueño). Emails especiales disparan los casos borde (`existente@…` → 409, `falla@…` → 500).

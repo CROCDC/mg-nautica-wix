@@ -26,8 +26,8 @@ test("a valid submission comes back normalised", () => {
     input: {
       email: "nombre@ejemplo.com",
       models: [
-        { slug: "colibri", label: "Colibrí", group: "vela" },
-        { slug: "bries", label: "Bries", group: "vela" },
+        { slug: "colibri", label: "Colibrí" },
+        { slug: "bries", label: "Bries" },
       ],
     },
   });
