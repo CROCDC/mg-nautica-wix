@@ -413,6 +413,37 @@ nexttech-footer { display: block; background: #060F1E; padding: .75rem 0; }
 .form input:focus, .form select:focus, .form textarea:focus { outline: none; border-color: var(--navy); }
 .form textarea { min-height: 120px; resize: vertical; }
 
+/* ── Newsletter ── */
+.newsletter-container { max-width: 760px; }
+.newsletter-form { max-width: none; gap: 1.25rem; }
+.newsletter-models { border: 1px solid var(--border); border-radius: var(--radius-lg); background: #fff; padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.newsletter-models legend { font-size: .85rem; font-weight: 500; padding: 0 .4rem; }
+.newsletter-models legend span { color: var(--muted); font-weight: 400; }
+.form .newsletter-search { background: var(--surface); }
+.model-group h3 { font-family: var(--ff-body); font-size: .75rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: .5rem; }
+.model-chips { display: flex; flex-wrap: wrap; gap: .45rem; }
+/* `.form label` makes every label a column; the chips are pills. */
+.form .model-chip {
+  flex-direction: row; align-items: center; gap: 0; cursor: pointer; user-select: none;
+  padding: .4rem .85rem; border: 1px solid var(--border); border-radius: 999px;
+  font-size: .85rem; color: var(--muted); background: #fff;
+  transition: var(--transition);
+}
+.form .model-chip:hover { border-color: var(--navy); color: var(--navy); }
+.form .model-chip:has(input:checked) { background: var(--navy); border-color: var(--navy); color: #fff; }
+.form .model-chip:has(input:focus-visible) { outline: 2px solid var(--gold); outline-offset: 2px; }
+/* The checkbox stays in the form (and the a11y tree); the pill is what you see. */
+.form .model-chip input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+/* Author `display` beats the UA rule for [hidden], so it is restated. */
+.model-group[hidden], .form .model-chip[hidden] { display: none; }
+.newsletter-hint { font-size: .85rem; color: var(--muted); }
+.newsletter-legal { font-size: .78rem; color: var(--muted); }
+.newsletter-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.newsletter-done { display: flex; flex-direction: column; gap: .35rem; font-size: 1rem; }
+.newsletter-cta { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+.newsletter-cta .section-head { text-align: left; margin-bottom: 0; }
+.newsletter-cta .section-head p { margin: 0; }
+
 /* ── Alerts ── */
 .alert { padding: .85rem 1.1rem; border-radius: var(--radius-sm); font-size: .9rem; }
 .alert-success { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }

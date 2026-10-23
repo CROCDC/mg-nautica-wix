@@ -148,6 +148,23 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Newsletter — model alerts */}
+      <section className="section">
+        <div className="container newsletter-cta">
+          <div className="section-head">
+            <span className="section-eyebrow">Alertas por modelo</span>
+            <h2>¿Buscás un modelo en particular?</h2>
+            <p>
+              Dejanos tu email, elegí los modelos que te interesan (Colibrí, Plenamar, Limbo…) y
+              te avisamos cuando ingrese uno.
+            </p>
+          </div>
+          <Link className="btn btn-navy btn-lg" href="/newsletter">
+            Suscribirme al newsletter
+          </Link>
+        </div>
+      </section>
+
       {/* CTA band */}
       <section className="cta-band">
         <h2>¿Querés vender tu embarcación?</h2>

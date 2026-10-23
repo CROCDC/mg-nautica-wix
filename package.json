@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@wix/categories": "^1.0.202",
+    "@wix/crm": "^1.0.1668",
     "@wix/ecom": "^1.0.2212",
+    "@wix/email-subscriptions": "^1.0.44",
     "@wix/redirects": "^1.0.117",
     "@wix/sdk": "^1.21.12",
     "@wix/stores": "^1.0.823",
