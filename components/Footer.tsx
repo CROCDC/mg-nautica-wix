@@ -16,6 +16,7 @@ const COMPANY_LINKS = [
   { href: "/services", label: "Servicios" },
   { href: "/sell-your-boat", label: "Vendé tu embarcación" },
   { href: "/contact", label: "Contacto" },
+  { href: "/newsletter", label: "Newsletter" },
 ];
 
 export default function Footer() {

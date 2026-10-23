@@ -7,10 +7,10 @@ There is no database and no authenticated area here, so the layers are:
 | --- | --- | --- |
 | Overflow guard | `overflow-detection.spec.ts` | The validity of the responsive layer |
 | Responsive / visual | `responsive.spec.ts` | Every public page × every viewport, + the screenshot baseline |
-| E2E | `e2e-catalog.spec.ts`, `e2e-filters.spec.ts`, `e2e-product.spec.ts`, `e2e-navigation.spec.ts` | Every user-facing flow |
+| E2E | `e2e-catalog.spec.ts`, `e2e-filters.spec.ts`, `e2e-product.spec.ts`, `e2e-navigation.spec.ts`, `e2e-newsletter.spec.ts` | Every user-facing flow |
 | HTTP | `routes.spec.ts` | Status codes, legacy redirects, robots.txt, the edge middleware |
 | Metadata | `metadata.spec.ts` | Titles, canonicals, Open Graph — the invisible failures |
-| Unit | `unit/wix-mapping.spec.ts`, `unit/boat-type.spec.ts` | The pure mapping/formatting logic in `lib/` |
+| Unit | `unit/wix-mapping.spec.ts`, `unit/boat-type.spec.ts`, `unit/boat-models.spec.ts`, `unit/newsletter-form.spec.ts` | The pure mapping/formatting/validation logic in `lib/` |
 | Live smoke | `live/wix-contract.spec.ts` | That the real Wix API contract still holds |
 
 `helpers/` holds shared non-spec code (Playwright only collects `*.spec.ts`).
@@ -68,6 +68,18 @@ churning every time the owner edits the catalog in the Wix dashboard.
 
 A replay miss **throws** rather than falling back to the network — a silent fallback
 would quietly make the whole suite depend on live credentials again.
+
+### The newsletter's writes are faked, not recorded
+
+The newsletter writes contacts, labels and email subscriptions into the Wix CRM.
+Recording those would create real contacts in the owner's CRM on every
+`test:record`, so `fakeCrmWrite` in the mock answers them in **both** modes and they
+never reach Wix. Two address prefixes steer the edge cases: `existente-…` gets Wix's
+409 `DUPLICATE_CONTACT_EXISTS`, `falla-…` gets a 500.
+
+Every faked write is appended to a JSON-lines log (`helpers/wix-writes.ts`), so
+`e2e-newsletter.spec.ts` asserts what was actually sent — the "Modelo: …" labels and
+the `SUBSCRIBED` opt-in — not just the confirmation text.
 
 ### Re-recording
 

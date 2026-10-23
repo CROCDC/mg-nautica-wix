@@ -57,7 +57,8 @@ public/
 
 See [.env.example](./.env.example). The only one needed to run the storefront is
 `NEXT_PUBLIC_WIX_CLIENT_ID` (Wix OAuth public client id — Wix dashboard → Settings → Headless).
-`WIX_API_KEY` is server-only and optional.
+`WIX_API_KEY` + `WIX_SITE_ID` are server-only; the newsletter needs them to write subscribers
+into the Wix CRM (see [docs/NEWSLETTER-PLAN.md](./docs/NEWSLETTER-PLAN.md)).
 
 ## Deploy pipeline
 

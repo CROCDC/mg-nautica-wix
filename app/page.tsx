@@ -97,28 +97,41 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Featured boats — latest from Wix */}
-      {featured.length > 0 && (
-        <section className="section">
-          <div className="container">
-            <div className="section-head">
-              <span className="section-eyebrow">Catálogo</span>
-              <h2>Últimos ingresos</h2>
-              <p>Embarcaciones seleccionadas disponibles en Argentina, Uruguay y el exterior.</p>
+      {/* Featured boats — latest from Wix — and the model alerts that pick up where they end */}
+      <section className="section">
+        <div className="container">
+          {featured.length > 0 && (
+            <>
+              <div className="section-head">
+                <span className="section-eyebrow">Catálogo</span>
+                <h2>Últimos ingresos</h2>
+                <p>Embarcaciones seleccionadas disponibles en Argentina, Uruguay y el exterior.</p>
+              </div>
+              <div className="boat-grid">
+                {featured.map((boat) => (
+                  <BoatCard key={boat.id} boat={boat} />
+                ))}
+              </div>
+              <div style={{ textAlign: "center", marginTop: "2rem" }}>
+                <Link className="btn btn-navy btn-lg" href="/category/all-products">
+                  Ver todas las embarcaciones
+                </Link>
+              </div>
+            </>
+          )}
+
+          <div className="nl-promo">
+            <div>
+              <span className="section-eyebrow">Alertas por modelo</span>
+              <h2>¿No está el barco que buscás?</h2>
+              <p>Decinos qué modelos buscás y te escribimos apenas ingrese uno al catálogo.</p>
             </div>
-            <div className="boat-grid">
-              {featured.map((boat) => (
-                <BoatCard key={boat.id} boat={boat} />
-              ))}
-            </div>
-            <div style={{ textAlign: "center", marginTop: "2rem" }}>
-              <Link className="btn btn-navy btn-lg" href="/category/all-products">
-                Ver todas las embarcaciones
-              </Link>
-            </div>
+            <Link className="btn btn-primary btn-lg" href="/newsletter">
+              Crear mi alerta
+            </Link>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Services */}
       <section className="section section-surface">

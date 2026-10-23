@@ -24,6 +24,7 @@ export const PUBLIC_PAGES: string[] = [
   "/sell-your-boat",
   "/about-us",
   "/contact",
+  "/newsletter",
   `/product-page/${SAMPLE_PRODUCT_SLUG}`,
   // The 404 view is a real page users land on; it gets the same treatment.
   "/no-such-page",

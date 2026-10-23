@@ -121,6 +121,7 @@ test("footer company links reach their pages", async ({ page }) => {
     { label: "Servicios", path: "/services" },
     { label: "Vendé tu embarcación", path: "/sell-your-boat" },
     { label: "Contacto", path: "/contact" },
+    { label: "Newsletter", path: "/newsletter" },
   ];
 
   for (const link of links) {

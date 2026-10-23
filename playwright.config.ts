@@ -1,5 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { resolve } from "node:path";
+import { WIX_WRITES_LOG } from "./tests/helpers/wix-writes";
 
 /**
  * Two servers, two projects.
@@ -69,7 +70,15 @@ export default defineConfig({
   ],
 
   webServer: [
-    server(MOCK_PORT, { WIX_MOCK: "replay", NODE_OPTIONS: mockPreload }),
+    server(MOCK_PORT, {
+      WIX_MOCK: "replay",
+      NODE_OPTIONS: mockPreload,
+      // The newsletter's admin client needs a key to exist at all; the mock answers its
+      // CRM writes and logs them where the specs can read them back.
+      WIX_API_KEY: "mock-api-key",
+      WIX_SITE_ID: "mock-site-id",
+      WIX_MOCK_WRITES: WIX_WRITES_LOG,
+    }),
     ...(LIVE ? [server(LIVE_PORT, {})] : []),
   ],
 });
