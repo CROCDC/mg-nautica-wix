@@ -52,15 +52,17 @@ function redact(bodyText) {
   );
 }
 
-// ── CRM writes (newsletter): faked, never recorded ─────────────────────────────
-// The newsletter writes contacts, labels and email subscriptions. Recording those
-// would create real contacts in the owner's CRM on every `test:record`, so they are
-// answered here in both modes and never reach Wix. The answers follow the shapes of
-// the real REST responses; the SDK mapping on top of them still runs.
+// ── CRM calls (newsletter, WhatsApp opt-out): faked, never recorded ─────────────
+// The newsletter writes contacts, labels and email subscriptions, and a WhatsApp BAJA
+// looks a contact up by phone and relabels it. Recording those would create and edit
+// real contacts in the owner's CRM on every `test:record`, so they are answered here in
+// both modes and never reach Wix. The answers follow the shapes of the real REST
+// responses; the SDK mapping on top of them still runs.
 //
-// A couple of addresses steer the edge cases:
-//   existente-…@… — the contact already exists (409 DUPLICATE_CONTACT_EXISTS)
-//   falla-…@…     — Wix is down (500)
+// A few values steer the edge cases:
+//   existente-…@…   — the contact already exists (409 DUPLICATE_CONTACT_EXISTS)
+//   falla-…@…       — Wix is down (500)
+//   +5491155550001  — the one phone a contact lookup finds (the opt-out specs' subscriber)
 //
 // Every faked write is appended to WIX_MOCK_WRITES (JSON lines) when it is set, so the
 // specs can assert what the app actually sent — the labels, the opt-in — and not just
@@ -76,19 +78,33 @@ const labelKey = (displayName) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
-async function fakeCrmWrite(request) {
-  if (request.method.toUpperCase() !== "POST") return null;
-  const path = new URL(request.url).pathname;
-  const isCrmWrite =
-    path.endsWith("/contacts/v4/labels") ||
-    path.endsWith("/contacts/v4/contacts") ||
-    /\/contacts\/v4\/contacts\/[^/]+\/labels$/.test(path) ||
-    path.endsWith("/email-marketing/v1/email-subscriptions");
-  if (!isCrmWrite) return null;
+export const OPT_OUT_PHONE = "+5491155550001";
+const OPT_OUT_CONTACT_ID = "00000000-0000-4000-8000-0000000000aa";
 
-  const body = JSON.parse((await request.clone().text()) || "{}");
+async function fakeCrmWrite(request) {
+  const method = request.method.toUpperCase();
+  const url = new URL(request.url);
+  const path = url.pathname;
+  const contactLabels = /\/contacts\/v4\/contacts\/[^/]+\/labels$/.test(path);
+  const isCrmCall =
+    (method === "POST" &&
+      (path.endsWith("/contacts/v4/labels") ||
+        path.endsWith("/contacts/v4/contacts") ||
+        path.endsWith("/contacts/v4/contacts/query") ||
+        contactLabels ||
+        path.endsWith("/email-marketing/v1/email-subscriptions"))) ||
+    (method === "DELETE" && contactLabels);
+  if (!isCrmCall) return null;
+
+  // Unlabel is a DELETE whose label keys ride in the query string.
+  const body =
+    method === "DELETE"
+      ? { labelKeys: url.searchParams.getAll("labelKeys") }
+      : JSON.parse((await request.clone().text()) || "{}");
   const [status, response] = crmAnswer(path, body);
-  if (WRITES_LOG) appendFileSync(WRITES_LOG, JSON.stringify({ path, body, status, response }) + "\n");
+  if (WRITES_LOG) {
+    appendFileSync(WRITES_LOG, JSON.stringify({ method, path, body, status, response }) + "\n");
+  }
   return new Response(JSON.stringify(response), {
     status,
     headers: { "content-type": "application/json" },
@@ -96,6 +112,28 @@ async function fakeCrmWrite(request) {
 }
 
 function crmAnswer(path, body) {
+  if (path.endsWith("/contacts/v4/contacts/query")) {
+    const phone = body.query?.filter?.["primaryInfo.phone"];
+    const wanted = typeof phone === "object" && phone ? phone.$eq : phone;
+    const contacts =
+      wanted === OPT_OUT_PHONE
+        ? [
+            {
+              id: OPT_OUT_CONTACT_ID,
+              revision: 1,
+              info: {
+                phones: { items: [{ phone: OPT_OUT_PHONE, countryCode: "AR", tag: "MOBILE" }] },
+                labelKeys: { items: ["custom.newsletter", "custom.canal-whatsapp"] },
+              },
+              primaryInfo: { phone: OPT_OUT_PHONE },
+            },
+          ]
+        : [];
+    return [
+      200,
+      { contacts, pagingMetadata: { count: contacts.length, offset: 0, total: contacts.length, tooManyToCount: false } },
+    ];
+  }
   if (path.endsWith("/contacts/v4/labels")) {
     const { displayName } = body;
     return [
@@ -148,6 +186,10 @@ if (MODE === "record" || MODE === "replay") {
     const request = new Request(input, init);
     const url = request.url;
 
+    // The suite must never message a real phone, whatever is in the shell's env.
+    if (url.includes("graph.facebook.com")) {
+      throw new Error(`[wix-http-mock] Refusing a WhatsApp API call during tests: ${url}`);
+    }
     if (!isWixApi(url)) return realFetch(input, init);
 
     const faked = await fakeCrmWrite(request);

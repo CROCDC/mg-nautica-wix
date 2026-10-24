@@ -82,7 +82,7 @@ test("visitor adds several boats and subscribes by WhatsApp", async ({ page }) =
   const create = contactWrite(number.e164);
   expect(create?.body).toEqual({
     info: {
-      phones: { items: [{ phone: number.e164, countryCode: "AR", tag: "MOBILE" }] },
+      phones: { items: [{ phone: number.e164, countryCode: "AR", tag: "MOBILE", primary: true }] },
       labelKeys: {
         items: [
           "custom.newsletter",
@@ -136,7 +136,7 @@ test("visitor subscribes by email instead", async ({ page }) => {
   await expect(done(page)).toContainText("por email apenas ingrese un Plenamar");
   expect(contactWrite(address)?.body).toEqual({
     info: {
-      emails: { items: [{ email: address, tag: "MAIN" }] },
+      emails: { items: [{ email: address, tag: "MAIN", primary: true }] },
       labelKeys: { items: ["custom.newsletter", "custom.canal-email", "custom.modelo-plenamar"] },
     },
   });
@@ -155,7 +155,8 @@ test("subscribing without picking boats still subscribes", async ({ page }) => {
 
   await expect(done(page)).toContainText("novedades del catálogo");
   expect(contactWrite(address)?.body).toMatchObject({
-    info: { labelKeys: { items: ["custom.newsletter", "custom.canal-email"] } },
+    // Picking nothing is following everything.
+    info: { labelKeys: { items: ["custom.newsletter", "custom.canal-email", "custom.modelo-todos"] } },
   });
 });
 

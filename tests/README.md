@@ -8,9 +8,9 @@ There is no database and no authenticated area here, so the layers are:
 | Overflow guard | `overflow-detection.spec.ts` | The validity of the responsive layer |
 | Responsive / visual | `responsive.spec.ts` | Every public page × every viewport, + the screenshot baseline |
 | E2E | `e2e-catalog.spec.ts`, `e2e-filters.spec.ts`, `e2e-product.spec.ts`, `e2e-navigation.spec.ts`, `e2e-newsletter.spec.ts` | Every user-facing flow |
-| HTTP | `routes.spec.ts` | Status codes, legacy redirects, robots.txt, the edge middleware |
+| HTTP | `routes.spec.ts`, `api-whatsapp.spec.ts` | Status codes, legacy redirects, robots.txt, the edge middleware; who may start the alert run and the WhatsApp webhook |
 | Metadata | `metadata.spec.ts` | Titles, canonicals, Open Graph — the invisible failures |
-| Unit | `unit/wix-mapping.spec.ts`, `unit/boat-type.spec.ts`, `unit/boat-models.spec.ts`, `unit/newsletter-form.spec.ts` | The pure mapping/formatting/validation logic in `lib/` |
+| Unit | `unit/wix-mapping.spec.ts`, `unit/boat-type.spec.ts`, `unit/boat-models.spec.ts`, `unit/newsletter-input.spec.ts`, `unit/phone.spec.ts`, `unit/alerts.spec.ts`, `unit/whatsapp.spec.ts` | The pure mapping/formatting/validation logic in `lib/`, and the alert run against in-memory fakes |
 | Live smoke | `live/wix-contract.spec.ts` | That the real Wix API contract still holds |
 
 `helpers/` holds shared non-spec code (Playwright only collects `*.spec.ts`).
@@ -79,7 +79,13 @@ never reach Wix. Two address prefixes steer the edge cases: `existente-…` gets
 
 Every faked write is appended to a JSON-lines log (`helpers/wix-writes.ts`), so
 `e2e-newsletter.spec.ts` asserts what was actually sent — the "Modelo: …" labels and
-the `SUBSCRIBED` opt-in — not just the confirmation text.
+the `SUBSCRIBED` opt-in — not just the confirmation text. The WhatsApp opt-out's contact
+lookup is faked the same way: one phone (`OPT_OUT_PHONE`) finds a contact, any other
+finds none.
+
+The mocked server runs with WhatsApp unconfigured, and the mock **throws** on any call
+to `graph.facebook.com` — whatever is in the shell's environment, the suite cannot
+message a real phone.
 
 ### Re-recording
 

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 import { resolve } from "node:path";
-import { WIX_WRITES_LOG } from "./tests/helpers/wix-writes";
+import { TEST_SECRETS, WIX_WRITES_LOG } from "./tests/helpers/wix-writes";
 
 /**
  * Two servers, two projects.
@@ -78,6 +78,12 @@ export default defineConfig({
       WIX_API_KEY: "mock-api-key",
       WIX_SITE_ID: "mock-site-id",
       WIX_MOCK_WRITES: WIX_WRITES_LOG,
+      // Alerts and the WhatsApp webhook check these secrets; the specs send the same
+      // values. WhatsApp itself stays unconfigured, so nothing can be sent for real.
+      CRON_SECRET: TEST_SECRETS.cron,
+      WHATSAPP_VERIFY_TOKEN: TEST_SECRETS.whatsappVerify,
+      WHATSAPP_APP_SECRET: TEST_SECRETS.whatsappApp,
+      WHATSAPP_TOKEN: "",
     }),
     ...(LIVE ? [server(LIVE_PORT, {})] : []),
   ],

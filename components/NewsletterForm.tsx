@@ -277,7 +277,7 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
 
       <p className="nl-legal">
         {channel === "whatsapp"
-          ? "Solo te escribimos sobre embarcaciones de MG Náutica. Pedinos la baja por el mismo chat cuando quieras."
+          ? "Solo te escribimos sobre embarcaciones de MG Náutica. Respondé BAJA a cualquier aviso y no te escribimos más."
           : "Solo te escribimos sobre embarcaciones de MG Náutica. Te das de baja desde cualquier email."}
       </p>
 

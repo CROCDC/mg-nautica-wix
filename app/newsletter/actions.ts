@@ -1,6 +1,7 @@
 "use server";
 
-import { subscribe, NewsletterUnavailableError } from "@/lib/newsletter";
+import { subscribe } from "@/lib/newsletter";
+import { WixAdminUnavailableError } from "@/lib/wix-admin";
 import type { NewsletterState } from "@/lib/newsletter-form";
 import { parseNewsletterForm } from "@/lib/newsletter-input";
 
@@ -22,7 +23,7 @@ export async function subscribeToNewsletter(
     return {
       status: "error",
       message:
-        err instanceof NewsletterUnavailableError
+        err instanceof WixAdminUnavailableError
           ? "El newsletter todavía no está disponible. Escribinos por WhatsApp y te avisamos."
           : "No pudimos completar la suscripción. Probá de nuevo en unos minutos.",
     };

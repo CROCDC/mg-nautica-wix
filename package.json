@@ -15,6 +15,7 @@
   "dependencies": {
     "@wix/categories": "^1.0.202",
     "@wix/crm": "^1.0.1668",
+    "@wix/data": "^1.0.534",
     "@wix/ecom": "^1.0.2212",
     "@wix/email-subscriptions": "^1.0.44",
     "@wix/redirects": "^1.0.117",
