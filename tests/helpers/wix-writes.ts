@@ -2,8 +2,8 @@
  * Read back the CRM writes the mocked server faked (see fakeCrmWrite in
  * mock/wix-http-mock.mjs) — what the newsletter actually sent to Wix.
  *
- * The log outlives a run and every spec shares it, so specs filter by an email unique
- * to the test rather than counting lines.
+ * The log outlives a run and every spec shares it, so specs filter by an email or phone
+ * unique to the test rather than counting lines.
  */
 
 import { readFileSync } from "node:fs";
@@ -36,4 +36,13 @@ export function readWixWrites(): WixWrite[] {
 /** An address no other test (or earlier run) has used. `prefix` steers the mock. */
 export function uniqueEmail(prefix = "test"): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
+}
+
+/**
+ * A Buenos Aires mobile no other test is likely to have used, as a visitor would type
+ * it (no 9, no 15) and as it must reach Wix (E.164, with the 9 restored).
+ */
+export function uniquePhone(): { typed: string; e164: string } {
+  const digits = String(Math.floor(Math.random() * 1e7)).padStart(7, "0");
+  return { typed: `11 2${digits.slice(0, 3)}-${digits.slice(3)}`, e164: `+549112${digits}` };
 }
