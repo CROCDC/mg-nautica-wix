@@ -2,6 +2,13 @@
 // browser bundle, so nothing heavy or server-only belongs here — the parsing (and the
 // phone metadata it needs) lives in lib/newsletter-input.ts.
 
+/**
+ * WhatsApp alerts are switched off for now: the form offers email only, the server files
+ * every submission as email and the alert run refuses to start. Set to true to bring the
+ * channel back (Meta setup in docs/NEWSLETTER-PLAN.md §6).
+ */
+export const WHATSAPP_ENABLED = false;
+
 /** How the subscriber wants to hear about a boat. */
 export type ContactChannel = "whatsapp" | "email";
 

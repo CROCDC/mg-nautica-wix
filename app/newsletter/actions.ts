@@ -2,7 +2,7 @@
 
 import { subscribe } from "@/lib/newsletter";
 import { WixAdminUnavailableError } from "@/lib/wix-admin";
-import type { NewsletterState } from "@/lib/newsletter-form";
+import { WHATSAPP_ENABLED, type NewsletterState } from "@/lib/newsletter-form";
 import { parseNewsletterForm } from "@/lib/newsletter-input";
 
 export async function subscribeToNewsletter(
@@ -12,7 +12,8 @@ export async function subscribeToNewsletter(
   const parsed = parseNewsletterForm(form);
   // A bot gets the same answer a person does, so it learns nothing worth retrying.
   if (parsed.kind === "bot") {
-    return { status: "ok", channel: form.get("channel") === "email" ? "email" : "whatsapp", models: [] };
+    const channel = WHATSAPP_ENABLED && form.get("channel") !== "email" ? "whatsapp" : "email";
+    return { status: "ok", channel, models: [] };
   }
   if (parsed.kind === "invalid") return { status: "error", message: parsed.message };
 

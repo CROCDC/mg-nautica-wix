@@ -15,6 +15,7 @@
 import { createHmac } from "node:crypto";
 import { test, expect } from "./fixtures";
 import { OPT_OUT_PHONE, TEST_SECRETS, readWixWrites } from "./helpers/wix-writes";
+import { WHATSAPP_ENABLED } from "@/lib/newsletter-form";
 
 // The opt-out specs read the shared CRM log from a starting point, so they run in order.
 test.describe.configure({ mode: "serial" });
@@ -34,7 +35,7 @@ test.describe("alert run", () => {
     expect(res.status()).toBe(401);
   });
 
-  test("does not start while WhatsApp is unconfigured", async ({ request }) => {
+  test("does not start while WhatsApp is switched off or unconfigured", async ({ request }) => {
     // A boat is alerted at most once, so a run whose sends all fail would burn those
     // alerts for good. It must refuse before touching the catalog or the log.
     const before = readWixWrites().length;
@@ -43,7 +44,9 @@ test.describe("alert run", () => {
     });
 
     expect(res.status()).toBe(503);
-    expect(await res.json()).toEqual({ error: "WhatsApp is not configured" });
+    expect(await res.json()).toEqual({
+      error: WHATSAPP_ENABLED ? "WhatsApp is not configured" : "WhatsApp alerts are switched off",
+    });
     expect(readWixWrites().slice(before)).toEqual([]);
   });
 });

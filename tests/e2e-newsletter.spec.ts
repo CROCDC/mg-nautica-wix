@@ -10,11 +10,17 @@
  *
  * Boats are picked in a single predictive field: type, and it suggests models from the
  * list (sail and motor together); Enter or a click adds one as a tag, as many as wanted.
- * The alert goes by WhatsApp (the default) or by email.
+ * The alert goes by WhatsApp (the default) or by email — email only while WhatsApp is
+ * switched off in code (WHATSAPP_ENABLED).
  */
 
 import { test, expect, type Page } from "./fixtures";
 import { readWixWrites, uniqueEmail, uniquePhone } from "./helpers/wix-writes";
+import { WHATSAPP_ENABLED } from "@/lib/newsletter-form";
+
+// The WhatsApp flows wait, skipped, while the channel is switched off in code.
+const whatsappTest = WHATSAPP_ENABLED ? test : test.skip;
+const whatsappOffTest = WHATSAPP_ENABLED ? test.skip : test;
 
 const field = (page: Page) => page.getByRole("combobox", { name: "Embarcaciones que buscás" });
 // Scoped to the suggestions: the country prefix <select> has options of its own.
@@ -37,7 +43,7 @@ async function addBoat(page: Page, typed: string) {
 }
 
 async function useEmail(page: Page, address: string) {
-  await channel(page, "Email").check();
+  if (WHATSAPP_ENABLED) await channel(page, "Email").check();
   await email(page).fill(address);
 }
 
@@ -60,9 +66,19 @@ function subscriptionWrite(address: string) {
   );
 }
 
-// ----- WhatsApp (the default) -------------------------------------------------------
+// ----- WhatsApp (the default when it is on) -----------------------------------------
 
-test("visitor adds several boats and subscribes by WhatsApp", async ({ page }) => {
+whatsappOffTest("with WhatsApp off, the form asks for an email only", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await expect(page.getByRole("radio")).toHaveCount(0);
+  await expect(phone(page)).toHaveCount(0);
+  await expect(page.locator(".nl-legal")).not.toContainText("BAJA");
+  await expect(email(page)).toBeVisible();
+});
+
+
+whatsappTest("visitor adds several boats and subscribes by WhatsApp", async ({ page }) => {
   const number = uniquePhone();
   await page.goto("/newsletter");
 
@@ -96,7 +112,7 @@ test("visitor adds several boats and subscribes by WhatsApp", async ({ page }) =
   });
 });
 
-test("the Uruguay prefix reaches Wix as a +598 number", async ({ page }) => {
+whatsappTest("the Uruguay prefix reaches Wix as a +598 number", async ({ page }) => {
   const digits = String(Math.floor(Math.random() * 1e6)).padStart(6, "0");
   await page.goto("/newsletter");
 
@@ -111,7 +127,7 @@ test("the Uruguay prefix reaches Wix as a +598 number", async ({ page }) => {
   });
 });
 
-test("a number without area code is rejected and the form keeps everything", async ({ page }) => {
+whatsappTest("a number without area code is rejected and the form keeps everything", async ({ page }) => {
   await page.goto("/newsletter");
 
   await addBoat(page, "limbo");
@@ -183,7 +199,7 @@ test("an email already in the CRM gets the new models added", async ({ page }) =
   });
 });
 
-test("switching channel keeps what was typed in each", async ({ page }) => {
+whatsappTest("switching channel keeps what was typed in each", async ({ page }) => {
   await page.goto("/newsletter");
 
   await phone(page).fill("11 2694-9628");
@@ -267,7 +283,7 @@ test("Escape closes the suggestions without adding anything", async ({ page }) =
 test("Enter in the field never submits the form", async ({ page }) => {
   await page.goto("/newsletter");
 
-  await phone(page).fill(uniquePhone().typed);
+  await useEmail(page, uniqueEmail());
   await field(page).fill("zzz");
   await field(page).press("Enter");
 
@@ -369,8 +385,7 @@ test.describe("on a 375px phone", () => {
     for (const target of [
       field(page),
       page.getByRole("listbox"),
-      prefix(page),
-      phone(page),
+      ...(WHATSAPP_ENABLED ? [prefix(page), phone(page)] : [email(page)]),
       page.getByRole("button", { name: "Activar alertas" }),
     ]) {
       const box = await target.boundingBox();
@@ -387,7 +402,7 @@ test.describe("on a 375px phone", () => {
     await page.goto("/newsletter");
 
     await addBoat(page, "colib");
-    await phone(page).fill(uniquePhone().typed);
+    await useEmail(page, uniqueEmail());
     await submit(page);
 
     await expect(done(page)).toBeInViewport();

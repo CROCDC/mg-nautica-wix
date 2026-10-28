@@ -9,6 +9,7 @@ import {
   HONEYPOT_FIELD,
   NEWSLETTER_IDLE,
   PHONE_COUNTRIES,
+  WHATSAPP_ENABLED,
   type ContactChannel,
   type PhoneCountry,
 } from "@/lib/newsletter-form";
@@ -64,7 +65,7 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
   const [state, action, pending] = useActionState(subscribeToNewsletter, NEWSLETTER_IDLE);
   // WhatsApp first: it is how this broker already talks to buyers. Each channel keeps
   // its own value, so switching back and forth loses nothing typed.
-  const [channel, setChannel] = useState<ContactChannel>("whatsapp");
+  const [channel, setChannel] = useState<ContactChannel>(WHATSAPP_ENABLED ? "whatsapp" : "email");
   const [country, setCountry] = useState<PhoneCountry>("AR");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
@@ -125,6 +126,26 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
     const data = new FormData(e.currentTarget);
     startTransition(() => action(data));
   }
+
+  const emailInput = (
+    <input
+      id={`${id}-email`}
+      type="email"
+      name="email"
+      className="nl-input"
+      aria-label="Tu email"
+      required
+      autoComplete="email"
+      placeholder="tu@email.com"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+    />
+  );
+  const submitButton = (
+    <button className="btn btn-primary" type="submit" disabled={pending}>
+      {pending ? "Activando…" : "Activar alertas"}
+    </button>
+  );
 
   return (
     <form className="nl-card" action={action} onSubmit={submit}>
@@ -204,70 +225,70 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
         </p>
       </div>
 
-      <fieldset className="nl-field">
-        <legend className="nl-field-label">¿Cómo te avisamos?</legend>
-        <div className="nl-channels">
-          {CONTACT_CHANNELS.map((c) => (
-            <label key={c.value} className="nl-channel">
-              <input
-                type="radio"
-                name="channel"
-                value={c.value}
-                checked={channel === c.value}
-                onChange={() => setChannel(c.value)}
-              />
-              {c.label}
-            </label>
-          ))}
-        </div>
-        <div className="nl-contact-row">
-          {channel === "whatsapp" ? (
-            <div className="nl-phone">
-              <select
-                name="country"
-                aria-label="Código de país"
-                value={country}
-                onChange={(e) => setCountry(e.target.value as PhoneCountry)}
-              >
-                {PHONE_COUNTRIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-              <input
-                type="tel"
-                name="phone"
-                aria-label="Tu número de WhatsApp"
-                required
-                inputMode="tel"
-                autoComplete="tel-national"
-                placeholder={PHONE_COUNTRIES.find((c) => c.value === country)!.example}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-          ) : (
-            <input
-              type="email"
-              name="email"
-              className="nl-input"
-              aria-label="Tu email"
-              required
-              autoComplete="email"
-              placeholder="tu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+      {WHATSAPP_ENABLED ? (
+        <fieldset className="nl-field">
+          <legend className="nl-field-label">¿Cómo te avisamos?</legend>
+          <div className="nl-channels">
+            {CONTACT_CHANNELS.map((c) => (
+              <label key={c.value} className="nl-channel">
+                <input
+                  type="radio"
+                  name="channel"
+                  value={c.value}
+                  checked={channel === c.value}
+                  onChange={() => setChannel(c.value)}
+                />
+                {c.label}
+              </label>
+            ))}
+          </div>
+          <div className="nl-contact-row">
+            {channel === "whatsapp" ? (
+              <div className="nl-phone">
+                <select
+                  name="country"
+                  aria-label="Código de país"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value as PhoneCountry)}
+                >
+                  {PHONE_COUNTRIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  name="phone"
+                  aria-label="Tu número de WhatsApp"
+                  required
+                  inputMode="tel"
+                  autoComplete="tel-national"
+                  placeholder={PHONE_COUNTRIES.find((c) => c.value === country)!.example}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            ) : (
+              emailInput
+            )}
+            {submitButton}
+          </div>
+          {channel === "whatsapp" && (
+            <p className="nl-hint">Con código de área. De otro país, escribilo con +código.</p>
           )}
-          <button className="btn btn-primary" type="submit" disabled={pending}>
-            {pending ? "Activando…" : "Activar alertas"}
-          </button>
+        </fieldset>
+      ) : (
+        <div className="nl-field">
+          <label className="nl-field-label" htmlFor={`${id}-email`}>
+            Tu email
+          </label>
+          <div className="nl-contact-row">
+            {emailInput}
+            {submitButton}
+          </div>
         </div>
-        {channel === "whatsapp" && (
-          <p className="nl-hint">Con código de área. De otro país, escribilo con +código.</p>
-        )}
-      </fieldset>
+      )}
 
       {state.status === "error" && (
         <div className="alert alert-error" role="alert">

@@ -59,7 +59,8 @@ See [.env.example](./.env.example). The only one needed to run the storefront is
 `NEXT_PUBLIC_WIX_CLIENT_ID` (Wix OAuth public client id — Wix dashboard → Settings → Headless).
 `WIX_API_KEY` + `WIX_SITE_ID` are server-only; the newsletter needs them to write subscribers
 into the Wix CRM, and the automatic WhatsApp alerts add `CRON_SECRET` and the `WHATSAPP_*`
-variables (see [docs/NEWSLETTER-PLAN.md](./docs/NEWSLETTER-PLAN.md) §5–6).
+variables (see [docs/NEWSLETTER-PLAN.md](./docs/NEWSLETTER-PLAN.md) §5–6). WhatsApp is
+switched off for now (`WHATSAPP_ENABLED` in `lib/newsletter-form.ts`): the form takes email only.
 
 ## Deploy pipeline
 

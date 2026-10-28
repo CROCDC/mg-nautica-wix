@@ -4,6 +4,11 @@
 > Plenamar, Limbo…), deje su **WhatsApp o su email**, y reciba un aviso **automático** cuando
 > se publique una embarcación de ese modelo — sin que nadie tenga que mandarlo a mano.
 
+> **Status:** WhatsApp is switched off in code for now (`WHATSAPP_ENABLED = false` in
+> `lib/newsletter-form.ts`). The form offers email only, every submission is filed as email,
+> and `/api/alerts/run` answers 503 without touching the catalog or the log. All the WhatsApp
+> code below stays in place; flipping the flag brings it back.
+
 ---
 
 ## 1. Decisiones

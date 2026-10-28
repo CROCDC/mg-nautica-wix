@@ -23,10 +23,14 @@ const email = (address: string, extra: Record<string, string | string[]> = {}) =
 const whatsapp = (phone: string, extra: Record<string, string | string[]> = {}) =>
   form({ channel: "whatsapp", country: "AR", phone, ...extra });
 
+// The rules of both channels, whatever WHATSAPP_ENABLED says today; the switched-off
+// behaviour has its own section at the end.
+const parse = (fd: FormData) => parseNewsletterForm(fd, { whatsapp: true });
+
 // ----- Email ----------------------------------------------------------------------
 
 test("an email submission comes back normalised", () => {
-  const parsed = parseNewsletterForm(email("  Nombre@Ejemplo.COM ", { models: ["colibri", "bries"] }));
+  const parsed = parse(email("  Nombre@Ejemplo.COM ", { models: ["colibri", "bries"] }));
 
   expect(parsed).toEqual({
     kind: "ok",
@@ -41,23 +45,23 @@ test("an email submission comes back normalised", () => {
 });
 
 test("a missing email asks for one", () => {
-  expect(parseNewsletterForm(email("   "))).toEqual({ kind: "invalid", message: "Ingresá tu email." });
+  expect(parse(email("   "))).toEqual({ kind: "invalid", message: "Ingresá tu email." });
 });
 
 for (const bad of ["a@b", "a@b.", "a@.com", "sin-arroba.com", "a b@c.com", "a@b@c.com"]) {
   test(`"${bad}" is rejected`, () => {
-    expect(parseNewsletterForm(email(bad))).toMatchObject({ kind: "invalid" });
+    expect(parse(email(bad))).toMatchObject({ kind: "invalid" });
   });
 }
 
 test("an address longer than RFC 5321 allows is rejected", () => {
-  expect(parseNewsletterForm(email(`${"a".repeat(250)}@b.com`))).toMatchObject({ kind: "invalid" });
+  expect(parse(email(`${"a".repeat(250)}@b.com`))).toMatchObject({ kind: "invalid" });
 });
 
 // ----- WhatsApp ---------------------------------------------------------------------
 
 test("a WhatsApp submission is stored as E.164 with its country", () => {
-  const parsed = parseNewsletterForm(whatsapp("11 2694-9628", { models: "plenamar" }));
+  const parsed = parse(whatsapp("11 2694-9628", { models: "plenamar" }));
 
   expect(parsed).toEqual({
     kind: "ok",
@@ -69,12 +73,12 @@ test("a WhatsApp submission is stored as E.164 with its country", () => {
 });
 
 test("WhatsApp is the channel when none is sent", () => {
-  const parsed = parseNewsletterForm(form({ phone: "11 2694-9628" }));
+  const parsed = parse(form({ phone: "11 2694-9628" }));
   expect(parsed).toMatchObject({ kind: "ok", input: { contact: { channel: "whatsapp" } } });
 });
 
 test("the Uruguay prefix applies to a local Uruguayan number", () => {
-  const parsed = parseNewsletterForm(whatsapp("099 123 456", { country: "UY" }));
+  const parsed = parse(whatsapp("099 123 456", { country: "UY" }));
   expect(parsed).toMatchObject({
     kind: "ok",
     input: { contact: { phone: "+59899123456", country: "UY" } },
@@ -82,32 +86,32 @@ test("the Uruguay prefix applies to a local Uruguayan number", () => {
 });
 
 test("an unknown prefix value falls back to Argentina", () => {
-  const parsed = parseNewsletterForm(whatsapp("11 2694-9628", { country: "XX" }));
+  const parsed = parse(whatsapp("11 2694-9628", { country: "XX" }));
   expect(parsed).toMatchObject({ kind: "ok", input: { contact: { phone: "+5491126949628" } } });
 });
 
 test("a missing number asks for one", () => {
-  expect(parseNewsletterForm(whatsapp("  "))).toEqual({
+  expect(parse(whatsapp("  "))).toEqual({
     kind: "invalid",
     message: "Ingresá tu número de WhatsApp.",
   });
 });
 
 test("a number without area code is rejected with a hint", () => {
-  const parsed = parseNewsletterForm(whatsapp("15 2694 9628"));
+  const parsed = parse(whatsapp("15 2694 9628"));
   expect(parsed).toMatchObject({ kind: "invalid", message: expect.stringContaining("código de área") });
 });
 
 test("an absurdly long value is rejected before parsing", () => {
-  expect(parseNewsletterForm(whatsapp("1".repeat(40)))).toMatchObject({ kind: "invalid" });
+  expect(parse(whatsapp("1".repeat(40)))).toMatchObject({ kind: "invalid" });
 });
 
 test("the email field is ignored on the WhatsApp channel, and vice versa", () => {
   // Both inputs never render together, but a crafted post can send both.
-  expect(parseNewsletterForm(whatsapp("11 2694-9628", { email: "x@y.com" }))).toMatchObject({
+  expect(parse(whatsapp("11 2694-9628", { email: "x@y.com" }))).toMatchObject({
     input: { contact: { channel: "whatsapp" } },
   });
-  expect(parseNewsletterForm(email("x@y.com", { phone: "11 2694-9628" }))).toMatchObject({
+  expect(parse(email("x@y.com", { phone: "11 2694-9628" }))).toMatchObject({
     input: { contact: { channel: "email", email: "x@y.com" } },
   });
 });
@@ -115,14 +119,14 @@ test("the email field is ignored on the WhatsApp channel, and vice versa", () =>
 // ----- Models and bots -------------------------------------------------------------
 
 test("models are optional", () => {
-  expect(parseNewsletterForm(email("nombre@ejemplo.com"))).toMatchObject({
+  expect(parse(email("nombre@ejemplo.com"))).toMatchObject({
     kind: "ok",
     input: { models: [] },
   });
 });
 
 test("unknown models are ignored, not an error", () => {
-  expect(parseNewsletterForm(email("nombre@ejemplo.com", { models: "trucho" }))).toMatchObject({
+  expect(parse(email("nombre@ejemplo.com", { models: "trucho" }))).toMatchObject({
     kind: "ok",
     input: { models: [] },
   });
@@ -130,10 +134,25 @@ test("unknown models are ignored, not an error", () => {
 
 test("a filled honeypot is a bot, even with a valid contact", () => {
   expect(
-    parseNewsletterForm(whatsapp("11 2694-9628", { [HONEYPOT_FIELD]: "https://spam.example" })),
+    parse(whatsapp("11 2694-9628", { [HONEYPOT_FIELD]: "https://spam.example" })),
   ).toEqual({ kind: "bot" });
 });
 
 test("an empty honeypot is a person", () => {
-  expect(parseNewsletterForm(email("nombre@ejemplo.com", { [HONEYPOT_FIELD]: "" })).kind).toBe("ok");
+  expect(parse(email("nombre@ejemplo.com", { [HONEYPOT_FIELD]: "" })).kind).toBe("ok");
+});
+
+// ----- WhatsApp switched off -------------------------------------------------------
+
+const offline = (fd: FormData) => parseNewsletterForm(fd, { whatsapp: false });
+
+test("with WhatsApp off, a submission without a channel is filed as email", () => {
+  expect(offline(form({ email: "Nombre@Ejemplo.com" }))).toMatchObject({
+    kind: "ok",
+    input: { contact: { channel: "email", email: "nombre@ejemplo.com" } },
+  });
+});
+
+test("with WhatsApp off, a page cached from before that posts a number is asked for an email", () => {
+  expect(offline(whatsapp("11 2694-9628"))).toEqual({ kind: "invalid", message: "Ingresá tu email." });
 });

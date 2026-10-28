@@ -2,7 +2,7 @@ import "server-only";
 // Newsletter form parsing — pure, so the rules are unit-tested without a server.
 // The Server Action (app/newsletter/actions.ts) runs this before anything reaches Wix.
 import { parseModels, type BoatModel } from "./boat-models";
-import { HONEYPOT_FIELD, type PhoneCountry } from "./newsletter-form";
+import { HONEYPOT_FIELD, WHATSAPP_ENABLED, type PhoneCountry } from "./newsletter-form";
 import { parseWhatsAppNumber } from "./phone";
 
 /** Where the alerts go: one channel per subscription, as picked in the form. */
@@ -31,8 +31,10 @@ const text = (form: FormData, name: string) => {
   return typeof v === "string" ? v.trim() : "";
 };
 
-function parseContact(form: FormData): NewsletterContact | string {
-  if (form.get("channel") === "email") {
+function parseContact(form: FormData, whatsapp: boolean): NewsletterContact | string {
+  // With WhatsApp off, a page cached from before still posts channel=whatsapp: it is
+  // filed as email, which asks for the address that page never showed.
+  if (!whatsapp || form.get("channel") === "email") {
     const email = text(form, "email").toLowerCase();
     if (!email) return "Ingresá tu email.";
     if (email.length > MAX_EMAIL || !EMAIL_RE.test(email)) {
@@ -52,11 +54,14 @@ function parseContact(form: FormData): NewsletterContact | string {
   return { channel: "whatsapp", phone: phone.e164, country: phone.country };
 }
 
-export function parseNewsletterForm(form: FormData): ParsedNewsletterForm {
+export function parseNewsletterForm(
+  form: FormData,
+  { whatsapp = WHATSAPP_ENABLED }: { whatsapp?: boolean } = {},
+): ParsedNewsletterForm {
   const honeypot = form.get(HONEYPOT_FIELD);
   if (typeof honeypot === "string" && honeypot.trim() !== "") return { kind: "bot" };
 
-  const contact = parseContact(form);
+  const contact = parseContact(form, whatsapp);
   if (typeof contact === "string") return { kind: "invalid", message: contact };
 
   const slugs = form.getAll("models").filter((v): v is string => typeof v === "string");

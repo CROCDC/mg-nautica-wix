@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { runAlerts } from "@/lib/alerts";
 import { wixAlertDeps } from "@/lib/alerts-wix";
+import { WHATSAPP_ENABLED } from "@/lib/newsletter-form";
 import { safeEqual } from "@/lib/secrets";
 import { whatsappConfigured } from "@/lib/whatsapp";
 
@@ -16,8 +17,11 @@ function authorized(req: NextRequest): boolean {
 
 async function run(req: NextRequest) {
   if (!authorized(req)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  // Without WhatsApp every send would fail, and a boat is never alerted twice — so
-  // running unconfigured would quietly burn those alerts. Better not to start.
+  // WhatsApp is the only channel the run sends on (email is only listed), and a boat is
+  // never alerted twice — so running with it off would quietly burn those alerts.
+  if (!WHATSAPP_ENABLED) {
+    return NextResponse.json({ error: "WhatsApp alerts are switched off" }, { status: 503 });
+  }
   if (!whatsappConfigured()) {
     return NextResponse.json({ error: "WhatsApp is not configured" }, { status: 503 });
   }
