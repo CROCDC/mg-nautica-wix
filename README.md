@@ -72,3 +72,24 @@ GitHub Actions owns the deploy (see plan §4):
   **off** Vercel's own Git integration for this project so deploys happen only from Actions.
 
 App env vars (`NEXT_PUBLIC_WIX_CLIENT_ID`, etc.) live in the Vercel project settings.
+
+## Design previews (Pi)
+
+Every `preview/<name>` branch gets its own environment on the nexttech Pi, to show
+alternative designs side by side without touching production:
+
+```bash
+git checkout -b preview/dark-hero main
+git push -u origin preview/dark-hero   # → https://mgn-dark-hero.nexttech.com.ar
+git push origin --delete preview/dark-hero   # tears the environment down
+```
+
+- **`.github/workflows/preview.yml`** triggers the Jenkins job `mg-nautica-wix-preview`:
+  `deploy` on every push to the branch, `destroy` when the branch is deleted.
+- **`Jenkinsfile.preview`** + **`docker-compose.preview.yml`** build the `Dockerfile` and run
+  it as compose project `mgn-<name>`; nginx-proxy routes the host, and the `*.nexttech.com.ar`
+  wildcard (DNS + cert) covers any name, so a new preview needs no infra change.
+- The name is lowercased and anything outside `a-z0-9` becomes `-` (max 50 chars).
+- Previews read the live Wix catalog, send `X-Robots-Tag: noindex`, and have the newsletter
+  off (no `WIX_API_KEY`). Builds run one at a time, so a few minutes per push on the Pi.
+- The destroy step runs `Jenkinsfile.preview` from `main`, so these files must be on `main`.

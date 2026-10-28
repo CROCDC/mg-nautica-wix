@@ -1,0 +1,17 @@
+.git
+.github
+.next
+.vercel
+node_modules
+.env*
+!.env.example
+tests
+test-results
+playwright.config.ts
+tsconfig.tests.json
+*.tsbuildinfo
+_accessory-images
+plans
+docs
+*.md
+.DS_Store
