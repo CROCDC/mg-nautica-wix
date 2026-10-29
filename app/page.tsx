@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getAllBoats, type Boat } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 import CountUp from "@/components/CountUp";
+import AlertCta from "@/components/AlertCta";
 
 // Always fetch the latest catalog from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -120,16 +121,7 @@ export default async function Home() {
             </>
           )}
 
-          <div className="nl-promo">
-            <div>
-              <span className="section-eyebrow">Alertas por modelo</span>
-              <h2>¿No está el barco que buscás?</h2>
-              <p>Decinos qué modelos buscás y te escribimos apenas ingrese uno al catálogo.</p>
-            </div>
-            <Link className="btn btn-primary btn-lg" href="/newsletter">
-              Crear mi alerta
-            </Link>
-          </div>
+          <AlertCta variant="panel" />
         </div>
       </section>
 

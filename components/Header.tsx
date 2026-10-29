@@ -11,6 +11,8 @@ const NAV = [
   { href: "/sell-your-boat", label: "Vendé tu embarcación" },
   { href: "/about-us", label: "Quiénes somos" },
   { href: "/contact", label: "Contacto" },
+  // The desktop bar is full at 8; there the footer and the boat pages lead to the alerts.
+  { href: "/newsletter", label: "Alertas por modelo", mobileOnly: true },
 ];
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";
@@ -31,7 +33,7 @@ export default function Header() {
         </Link>
         <ul className="nav-links" id="nav-links">
           {NAV.map((item) => (
-            <li key={item.href}>
+            <li key={item.href} className={item.mobileOnly ? "nav-mobile-only" : undefined}>
               <Link href={item.href}>{item.label}</Link>
             </li>
           ))}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { startTransition, useActionState, useEffect, useId, useRef, useState } from "react";
 import { subscribeToNewsletter } from "@/app/newsletter/actions";
-import { parseModels, suggestModels } from "@/lib/boat-models";
+import { BOAT_MODELS, orList, parseModels, suggestModels } from "@/lib/boat-models";
 import {
   CONTACT_CHANNELS,
   HONEYPOT_FIELD,
@@ -13,11 +13,6 @@ import {
   type ContactChannel,
   type PhoneCountry,
 } from "@/lib/newsletter-form";
-
-/** "Colibrí", "Colibrí o Bries", "Colibrí, Bries o Limbo". */
-function orList(items: string[]): string {
-  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} o ${items.at(-1)}`;
-}
 
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -47,7 +42,7 @@ function Done({ channel, models }: { channel: ContactChannel; models: string[] }
     <div className="nl-card nl-done" role="status" tabIndex={-1} ref={ref}>
       <span className="nl-done-icon" aria-hidden="true">✓</span>
       <div>
-        <h2>¡Listo! Tus alertas están activas</h2>
+        <h2>Listo, tu alerta quedó creada</h2>
         <p>
           {models.length > 0
             ? `Te escribimos ${via} apenas ingrese un ${orList(models)}.`
@@ -61,7 +56,17 @@ function Done({ channel, models }: { channel: ContactChannel; models: string[] }
   );
 }
 
-export default function NewsletterForm({ initialModels = [] }: { initialModels?: string[] }) {
+/**
+ * `register` lays the whole model list beside the form, for a visitor who would rather
+ * browse the names than guess one to type.
+ */
+export default function NewsletterForm({
+  initialModels = [],
+  register = false,
+}: {
+  initialModels?: string[];
+  register?: boolean;
+}) {
   const [state, action, pending] = useActionState(subscribeToNewsletter, NEWSLETTER_IDLE);
   // WhatsApp first: it is how this broker already talks to buyers. Each channel keeps
   // its own value, so switching back and forth loses nothing typed.
@@ -93,6 +98,11 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
   function remove(slug: string) {
     setPicked((cur) => cur.filter((s) => s !== slug));
     input.current?.focus();
+  }
+  // From the register focus stays on the name: moving it to the field would pop the
+  // keyboard on a phone after every tap.
+  function toggle(slug: string) {
+    setPicked((cur) => (cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug]));
   }
 
   // A combobox: ↑/↓ move through the suggestions, Enter adds the highlighted one,
@@ -143,11 +153,11 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
   );
   const submitButton = (
     <button className="btn btn-primary" type="submit" disabled={pending}>
-      {pending ? "Activando…" : "Activar alertas"}
+      {pending ? "Creando…" : "Crear mi alerta"}
     </button>
   );
 
-  return (
+  const form = (
     <form className="nl-card" action={action} onSubmit={submit}>
       <div className="nl-field">
         <label className="nl-field-label" htmlFor={`${id}-boats`}>
@@ -310,5 +320,25 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
         </label>
       </div>
     </form>
+  );
+
+  if (!register) return form;
+  return (
+    <div className="nl-layout">
+      {form}
+      <section className="nl-register" aria-labelledby={`${id}-register`}>
+        <h2 id={`${id}-register`}>Modelos que podés seguir</h2>
+        <p>Tocá los que buscás y se suman a tu alerta.</p>
+        <ul>
+          {BOAT_MODELS.map((m) => (
+            <li key={m.slug}>
+              <button type="button" aria-pressed={picked.includes(m.slug)} onClick={() => toggle(m.slug)}>
+                {m.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
   );
 }

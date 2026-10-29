@@ -88,6 +88,17 @@ export function parseModels(raw: readonly string[]): BoatModel[] {
   return out;
 }
 
+/** "Colibrí", "Colibrí o Bries", "Colibrí, Bries o Limbo". */
+export function orList(items: readonly string[]): string {
+  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} o ${items.at(-1)}`;
+}
+
+/** The newsletter form with these models already picked (see app/newsletter/page.tsx). */
+export function alertHref(models: readonly BoatModel[]): string {
+  const qs = new URLSearchParams(models.map((m) => ["modelo", m.slug])).toString();
+  return qs ? `/newsletter?${qs}` : "/newsletter";
+}
+
 /** The Wix contact label a model is stored under — what the owner segments a campaign by. */
 export function modelLabel(m: BoatModel): string {
   return `Modelo: ${m.label}`;

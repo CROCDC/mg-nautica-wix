@@ -17,6 +17,7 @@
 import { test, expect, type Page } from "./fixtures";
 import { readWixWrites, uniqueEmail, uniquePhone } from "./helpers/wix-writes";
 import { WHATSAPP_ENABLED } from "@/lib/newsletter-form";
+import { SAMPLE_PRODUCT_SLUG } from "./pages";
 
 // The WhatsApp flows wait, skipped, while the channel is switched off in code.
 const whatsappTest = WHATSAPP_ENABLED ? test : test.skip;
@@ -30,7 +31,7 @@ const phone = (page: Page) => page.getByLabel("Tu número de WhatsApp");
 const prefix = (page: Page) => page.getByLabel("Código de país");
 const email = (page: Page) => page.getByLabel("Tu email");
 const channel = (page: Page, name: "WhatsApp" | "Email") => page.getByRole("radio", { name });
-const submit = (page: Page) => page.getByRole("button", { name: "Activar alertas" }).click();
+const submit = (page: Page) => page.getByRole("button", { name: "Crear mi alerta" }).click();
 
 // By class rather than role: Next's route announcer is also a role="alert" in the page.
 const done = (page: Page) => page.locator(".nl-done");
@@ -91,7 +92,7 @@ whatsappTest("visitor adds several boats and subscribes by WhatsApp", async ({ p
   await phone(page).fill(number.typed);
   await submit(page);
 
-  await expect(done(page)).toContainText("Tus alertas están activas");
+  await expect(done(page)).toContainText("tu alerta quedó creada");
   await expect(done(page)).toContainText("por WhatsApp apenas ingrese un Colibrí, Bries o Trento");
   await expect(done(page)).toBeFocused();
 
@@ -351,7 +352,7 @@ test("a filled honeypot looks like success and never reaches Wix", async ({ page
   await page.locator('input[name="website"]').fill("https://spam.example");
   await submit(page);
 
-  await expect(done(page)).toContainText("Tus alertas están activas");
+  await expect(done(page)).toContainText("tu alerta quedó creada");
   expect(contactWrite(address)).toBeUndefined();
   expect(subscriptionWrite(address)).toBeUndefined();
 });
@@ -366,6 +367,96 @@ test("the home promo opens the form", async ({ page }) => {
   await page.waitForURL(/\/newsletter$/);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Alertas por modelo");
   await expect(field(page)).toBeVisible();
+});
+
+test("a home example opens the form on that model", async ({ page }) => {
+  await page.goto("/");
+
+  await page.locator(".nl-promo").getByRole("link", { name: "Colibrí" }).click();
+
+  await page.waitForURL(/\/newsletter\?modelo=colibri$/);
+  await expect(tags(page)).toHaveText(["Colibrí"]);
+});
+
+test("a catalog search for a model with no boat offers its alert", async ({ page }) => {
+  await page.goto("/category/all-products?q=colibri");
+
+  await expect(page.locator(".empty")).toContainText("Te avisamos por email cuando publiquemos un Colibrí");
+  await page.locator(".empty").getByRole("link", { name: "Crear mi alerta" }).click();
+
+  await page.waitForURL(/\/newsletter\?modelo=colibri$/);
+  await expect(tags(page)).toHaveText(["Colibrí"]);
+});
+
+test("catalog results for a model end with an alert for another one", async ({ page }) => {
+  await page.goto("/category/all-products?q=plenamar");
+
+  const strip = page.locator(".alert-strip");
+  await expect(strip).toContainText("cuando publiquemos otro Plenamar");
+  await expect(strip.getByRole("link", { name: "Crear mi alerta" })).toHaveAttribute(
+    "href",
+    "/newsletter?modelo=plenamar",
+  );
+});
+
+test("a boat page offers the alert for its own model", async ({ page }) => {
+  await page.goto(`/product-page/${SAMPLE_PRODUCT_SLUG}`);
+
+  const box = page.locator(".alert-box");
+  await expect(box).toContainText("Si entra otro Grumete, te avisamos por email.");
+  await box.getByRole("link", { name: "Crear mi alerta" }).click();
+
+  await page.waitForURL(/\/newsletter\?modelo=grumete$/);
+  await expect(tags(page)).toHaveText(["Grumete"]);
+});
+
+test("the footer band leads to the form, except on pages with their own", async ({ page }) => {
+  await page.goto("/services");
+  await page.locator(".footer-alerts").getByRole("link", { name: "Crear mi alerta" }).click();
+
+  await page.waitForURL(/\/newsletter$/);
+  await expect(page.locator(".footer-alerts")).toHaveCount(0);
+  await page.goto("/");
+  await expect(page.locator(".footer-alerts")).toHaveCount(0);
+});
+
+// ----- Register -----------------------------------------------------------------------
+
+const registerName = (page: Page, name: string) =>
+  page.locator(".nl-register").getByRole("button", { name, exact: true });
+
+test("tapping a name in the register picks it, tapping again drops it", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await registerName(page, "Bries").click();
+  await registerName(page, "Limbo").click();
+  await expect(tags(page)).toHaveText(["Bries", "Limbo"]);
+  await expect(registerName(page, "Bries")).toHaveAttribute("aria-pressed", "true");
+
+  await registerName(page, "Bries").click();
+  await expect(tags(page)).toHaveText(["Limbo"]);
+  await expect(registerName(page, "Bries")).toHaveAttribute("aria-pressed", "false");
+});
+
+test("the register reflects models typed in the field and arrived by link", async ({ page }) => {
+  await page.goto("/newsletter?modelo=plenamar");
+  await addBoat(page, "colib");
+
+  await expect(registerName(page, "Plenamar")).toHaveAttribute("aria-pressed", "true");
+  await expect(registerName(page, "Colibrí")).toHaveAttribute("aria-pressed", "true");
+});
+
+test("models picked in the register are the ones subscribed", async ({ page }) => {
+  const address = uniqueEmail();
+  await page.goto("/newsletter");
+
+  await registerName(page, "Trento").click();
+  await useEmail(page, address);
+  await submit(page);
+
+  await expect(done(page)).toContainText("apenas ingrese un Trento");
+  expect(JSON.stringify(contactWrite(address)?.body)).toContain('"custom.modelo-trento"');
+  await expect(page.locator(".nl-register")).toHaveCount(0);
 });
 
 // ----- Phone ------------------------------------------------------------------------
@@ -386,7 +477,7 @@ test.describe("on a 375px phone", () => {
       field(page),
       page.getByRole("listbox"),
       ...(WHATSAPP_ENABLED ? [prefix(page), phone(page)] : [email(page)]),
-      page.getByRole("button", { name: "Activar alertas" }),
+      page.getByRole("button", { name: "Crear mi alerta" }),
     ]) {
       const box = await target.boundingBox();
       expect(box!.x).toBeGreaterThanOrEqual(0);

@@ -5,7 +5,7 @@ import { parseModels } from "@/lib/boat-models";
 export const metadata: Metadata = {
   title: "Newsletter y alertas por modelo",
   description:
-    "Elegí los modelos de barco que buscás y dejanos tu email: MG Náutica te escribe apenas ingresa uno al catálogo.",
+    "Elegí los modelos de barco que buscás y dejanos tu email: MG Náutica te avisa cuando publica uno en el catálogo.",
 };
 
 // `?modelo=plenamar` (repeatable) arrives already picked, so a link can open the form
@@ -22,16 +22,15 @@ export default async function Newsletter({
     <>
       <div className="page-banner">
         <div className="container">
-          <span className="section-eyebrow">Newsletter</span>
           <h1>Alertas por modelo</h1>
-          <p>Elegí los barcos que buscás y te escribimos apenas ingrese uno al catálogo.</p>
+          <p>Elegí los modelos que buscás. Cuando publiquemos uno en el catálogo, te avisamos por email.</p>
         </div>
       </div>
 
       <section className="section">
-        <div className="container nl-wrap">
+        <div className="container">
           {/* Keyed so arriving with a different ?modelo= starts from that pick. */}
-          <NewsletterForm key={initial.join(",")} initialModels={initial} />
+          <NewsletterForm key={initial.join(",")} initialModels={initial} register />
         </div>
       </section>
     </>

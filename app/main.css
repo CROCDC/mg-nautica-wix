@@ -79,6 +79,7 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 .btn-ghost:hover { border-color: var(--navy); color: var(--navy); }
 .btn-secondary { background: var(--white); color: var(--navy); border-color: var(--border); }
 .btn-secondary:hover { border-color: var(--navy); }
+.btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 .btn-sm { padding: .4rem .9rem; font-size: .85rem; }
 .btn-lg { padding: .85rem 2rem; font-size: 1.05rem; }
 
@@ -115,6 +116,7 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 .nav-actions .btn-primary { padding: .5rem 1.1rem; }
 
 .nav-burger { display: none; background: none; border: none; cursor: pointer; color: #fff; }
+.nav-mobile-only { display: none; }
 
 /* ── Hero ── */
 .hero {
@@ -414,7 +416,10 @@ nexttech-footer { display: block; background: #060F1E; padding: .75rem 0; }
 .form textarea { min-height: 120px; resize: vertical; }
 
 /* ── Newsletter / model alerts ── */
-.nl-wrap { max-width: 600px; }
+/* Form beside the register; the register drops under the form below 1024. */
+.nl-layout { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 3rem; align-items: start; }
+/* The form rides along while the visitor reads down the register, so picks show up in it. */
+.nl-layout > .nl-card { position: sticky; top: 92px; }
 .nl-card {
   position: relative; display: flex; flex-direction: column; gap: 1.4rem;
   background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg);
@@ -490,7 +495,7 @@ fieldset.nl-field > legend { padding: 0; margin-bottom: .45rem; }
 .nl-phone select:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
 .nl-legal { font-size: .78rem; color: var(--muted); }
 .nl-trap { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
-.nl-done { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 1rem 1.25rem; scroll-margin-top: 96px; }
+.nl-done { max-width: 640px; flex-direction: row; align-items: center; flex-wrap: wrap; gap: 1rem 1.25rem; scroll-margin-top: 96px; }
 .nl-done:focus { outline: none; }
 .nl-done > div { flex: 1; min-width: 12rem; }
 .nl-done h2 { font-size: 1.25rem; color: var(--navy); margin-bottom: .2rem; }
@@ -500,21 +505,67 @@ fieldset.nl-field > legend { padding: 0; margin-bottom: .45rem; }
   border-radius: 50%; background: #ecfdf5; border: 1px solid #6ee7b7; color: var(--success); font-size: 1.2rem; font-weight: 700;
 }
 
-/* Home: the card that closes the latest-boats section */
+/* The register: every model the alerts know, set like a shipyard's model board. Each
+   name is a toggle; the picked ones turn into the same navy pill as the form's tags. */
+.nl-register { padding-top: 1.25rem; position: relative; }
+.nl-register::before { content: ''; position: absolute; top: 0; left: 0; width: 3rem; height: 2px; background: var(--gold); }
+.nl-register h2 { font-size: 1.3rem; color: var(--navy); margin-bottom: .3rem; }
+.nl-register > p { font-size: .85rem; color: var(--muted); margin-bottom: 1rem; }
+.nl-register ul { list-style: none; columns: 3; column-gap: 1.75rem; }
+.nl-register li { break-inside: avoid; }
+.nl-register button {
+  display: block; width: 100%; padding: .4rem .5rem; margin: 0 -.5rem; box-sizing: content-box;
+  border: 0; border-bottom: 1px solid var(--border); background: none; text-align: left; cursor: pointer;
+  font-family: var(--ff-heading); font-size: 1.08rem; line-height: 1.35; color: var(--navy);
+  transition: background var(--transition), color var(--transition);
+}
+.nl-register button:hover { background: var(--surface); }
+.nl-register button[aria-pressed="true"] { background: var(--navy); color: #fff; border-bottom-color: var(--navy); border-radius: var(--radius-sm); }
+.nl-register button:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; position: relative; z-index: 1; }
+
+/* Home: the panel that closes the latest-boats section */
 .nl-promo {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem 2rem;
   margin-top: 3.5rem; padding: 2rem 2.5rem; border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%); color: #fff;
+  background: var(--navy); color: #fff;
 }
 .nl-promo:first-child { margin-top: 0; }
 .nl-promo h2 { color: #fff; margin-bottom: .35rem; }
 .nl-promo p { color: rgba(255,255,255,.72); }
+.nl-promo .nl-promo-examples { margin-top: .6rem; font-size: .9rem; }
+.nl-promo-examples a { color: #fff; text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 3px; }
+.nl-promo-examples a:hover { color: var(--gold-light); }
+
+/* Catalog: after the results */
+.alert-strip {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .9rem 1.5rem;
+  margin-top: 2.5rem; padding: 1.1rem 1.5rem; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--border);
+}
+.alert-strip p { font-size: .95rem; color: var(--muted); }
+.alert-strip strong { color: var(--navy); font-weight: 600; }
+.empty-alert { margin-top: .5rem; color: var(--text); }
+.empty-actions { display: flex; gap: .6rem; justify-content: center; flex-wrap: wrap; margin-top: 1.25rem; }
+
+/* Boat page: under the price box */
+.alert-box { margin-top: 1rem; }
+.alert-box p { font-size: .9rem; color: var(--muted); line-height: 1.5; margin-bottom: .8rem; }
+
+/* Footer: pages without an alert CTA of their own (components/FooterAlerts.tsx) */
+.footer-alerts { background: var(--navy-mid); margin: -3.5rem 0 3rem; }
+.footer-alerts-inner {
+  max-width: var(--max-w); margin: 0 auto; padding: 1.5rem var(--gutter);
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem 2rem;
+}
+.footer-alerts p { color: rgba(255,255,255,.75); }
+.footer-alerts strong { color: #fff; font-family: var(--ff-heading); font-size: 1.15rem; font-weight: 600; margin-right: .35rem; }
 
 @media (max-width: 480px) {
   .nl-card { padding: 1.25rem; }
   .nl-contact-row { flex-direction: column; }
-  .nl-contact-row .btn, .nl-promo .btn { width: 100%; justify-content: center; }
+  .nl-contact-row .btn, .nl-promo .btn, .alert-strip .btn, .footer-alerts .btn { width: 100%; justify-content: center; }
   .nl-promo { padding: 1.75rem 1.25rem; }
+  .alert-strip { padding: 1.1rem 1.25rem; }
 }
 
 /* ── Alerts ── */
@@ -713,6 +764,8 @@ fieldset.nl-field > legend { padding: 0; margin-bottom: .45rem; }
   .photo-collage-main { min-height: 280px; }
   .photo-collage-sub { min-height: 140px; }
   .page-banner { padding: 2.75rem 0 2.25rem; }
+  .nl-layout { grid-template-columns: minmax(0, 1fr); gap: 2.5rem; }
+  .nl-layout > .nl-card { position: relative; top: auto; max-width: 640px; }
 }
 @media (max-width: 768px) {
   .nav-links { display: none; }
@@ -724,6 +777,7 @@ fieldset.nl-field > legend { padding: 0; margin-bottom: .45rem; }
     z-index: 99; box-shadow: var(--shadow-lg);
   }
   .nav-links.open a { display: block; padding: .6rem .75rem; }
+  .nav-links.open .nav-mobile-only { display: block; }
   .section { padding: 2.75rem 0; }
   .hero-inner { padding-top: 2.5rem; padding-bottom: 2.25rem; }
   .hero-stats { flex-wrap: wrap; gap: 1.25rem; }
@@ -736,6 +790,7 @@ fieldset.nl-field > legend { padding: 0; margin-bottom: .45rem; }
   .cta-band { padding: 3rem var(--gutter); }
   .page-banner { padding: 2.25rem 0 1.75rem; }
   .sidebar-price { font-size: 1.85rem; }
+  .nl-register ul { columns: 2; column-gap: 1.25rem; }
 }
 @media (max-width: 480px) {
   .nav-actions .btn { display: none; }

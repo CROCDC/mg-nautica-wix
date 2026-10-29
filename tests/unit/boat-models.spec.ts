@@ -10,7 +10,9 @@
 import { test, expect } from "@playwright/test";
 import {
   BOAT_MODELS,
+  alertHref,
   modelLabel,
+  orList,
   modelsInListing,
   parseModels,
   suggestModels,
@@ -208,4 +210,17 @@ test("a listing with two models matches both", () => {
     "Limbo",
     "Plenamar",
   ]);
+});
+
+test("an alert link carries its models as repeated ?modelo=, in order", () => {
+  expect(alertHref([])).toBe("/newsletter");
+  expect(alertHref(parseModels(["plenamar"]))).toBe("/newsletter?modelo=plenamar");
+  expect(alertHref(parseModels(["trento", "colibri"]))).toBe("/newsletter?modelo=trento&modelo=colibri");
+});
+
+test("model names read as a Spanish 'or' list", () => {
+  expect(orList([])).toBe("");
+  expect(orList(["Colibrí"])).toBe("Colibrí");
+  expect(orList(["Colibrí", "Bries"])).toBe("Colibrí o Bries");
+  expect(orList(["Colibrí", "Bries", "Limbo"])).toBe("Colibrí, Bries o Limbo");
 });

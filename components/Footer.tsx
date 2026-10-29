@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Script from "next/script";
+import FooterAlerts from "@/components/FooterAlerts";
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";
 
@@ -16,13 +17,14 @@ const COMPANY_LINKS = [
   { href: "/services", label: "Servicios" },
   { href: "/sell-your-boat", label: "Vendé tu embarcación" },
   { href: "/contact", label: "Contacto" },
-  { href: "/newsletter", label: "Newsletter" },
+  { href: "/newsletter", label: "Alertas por modelo" },
 ];
 
 export default function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="site-footer">
+      <FooterAlerts />
       <div className="footer-grid">
         <div>
           <div className="footer-brand">
