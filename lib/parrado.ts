@@ -3,7 +3,7 @@
 
 export const WHATSAPP = "5491126949628";
 
-export const PARRADO_SINCE = 1967;
+export const PARRADO_SINCE = 1976;
 
 export const CAR_DISCOUNT = 30;
 export const HOME_DISCOUNT = 20;

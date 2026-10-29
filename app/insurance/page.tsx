@@ -129,7 +129,7 @@ export default async function Insurance({
             <p className="pi-since-year" aria-hidden="true">{PARRADO_SINCE}</p>
             <h2>Parrado &amp; Asociados</h2>
             <p className="pi-since-lead">
-              Consultores en seguros desde {PARRADO_SINCE}: casi seis décadas en el mercado. Por
+              Consultores en seguros desde {PARRADO_SINCE}: medio siglo en el mercado. Por
               eso son la aseguradora que elegimos para nuestros clientes.
             </p>
             <dl className="pi-pillars">
