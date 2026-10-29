@@ -13,6 +13,8 @@ import {
 import { BOAT_TYPES, parseBoatType, type BoatType } from "@/lib/boat-type";
 import BoatCard from "@/components/BoatCard";
 import SearchBox from "@/components/SearchBox";
+import AlertCta from "@/components/AlertCta";
+import { alertHref, modelsInListing, orList } from "@/lib/boat-models";
 
 // Always fetch the latest from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -216,6 +218,8 @@ async function Results({
   );
 
   const hasFilter = !!nq || minN != null || maxN != null || type != null;
+  // A search that names a model ("colibri", "plenamar 23") opens the alert form on it.
+  const searched = modelsInListing(q);
 
   return (
     <>
@@ -225,11 +229,14 @@ async function Results({
       </p>
 
       {boats.length ? (
-        <div className="boat-grid">
-          {boats.map((boat) => (
-            <BoatCard key={boat.id} boat={boat} />
-          ))}
-        </div>
+        <>
+          <div className="boat-grid">
+            {boats.map((boat) => (
+              <BoatCard key={boat.id} boat={boat} />
+            ))}
+          </div>
+          <AlertCta variant="strip" models={searched} />
+        </>
       ) : (
         <div className="empty">
           <p>
@@ -239,9 +246,29 @@ async function Results({
                 ? "No se encontraron embarcaciones con esos filtros."
                 : "No hay embarcaciones en esta categoría por ahora."}
           </p>
-          <Link className="btn btn-outline" href={hasFilter ? backHref : "/category/all-products"} style={{ marginTop: "1rem" }}>
-            {hasFilter ? "Limpiar filtros" : "Ver todas"}
-          </Link>
+          {searched.length > 0 && (
+            <p className="empty-alert">
+              Te avisamos por email cuando publiquemos un {orList(searched.map((m) => m.label))}.
+            </p>
+          )}
+          <div className="empty-actions">
+            {searched.length > 0 && (
+              <Link className="btn btn-primary" href={alertHref(searched)}>
+                Crear mi alerta
+              </Link>
+            )}
+            <Link
+              className={`btn ${searched.length ? "btn-ghost" : "btn-outline"}`}
+              href={hasFilter ? backHref : "/category/all-products"}
+            >
+              {hasFilter ? "Limpiar filtros" : "Ver todas"}
+            </Link>
+            {searched.length === 0 && (
+              <Link className="btn btn-ghost" href={alertHref([])}>
+                Crear mi alerta
+              </Link>
+            )}
+          </div>
         </div>
       )}
     </>

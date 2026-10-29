@@ -1,6 +1,29 @@
-// Newsletter form parsing — pure, so the rules are unit-tested without a server.
-// The Server Action (app/newsletter/actions.ts) runs this before anything reaches Wix.
-import { parseModels, type BoatModel } from "./boat-models";
+// What the NewsletterForm client component and the Server Action share. It is in the
+// browser bundle, so nothing heavy or server-only belongs here — the parsing (and the
+// phone metadata it needs) lives in lib/newsletter-input.ts.
+
+/**
+ * WhatsApp alerts are switched off for now: the form offers email only, the server files
+ * every submission as email and the alert run refuses to start. Set to true to bring the
+ * channel back (Meta setup in docs/NEWSLETTER-PLAN.md §6).
+ */
+export const WHATSAPP_ENABLED = false;
+
+/** How the subscriber wants to hear about a boat. */
+export type ContactChannel = "whatsapp" | "email";
+
+export const CONTACT_CHANNELS: { value: ContactChannel; label: string }[] = [
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "email", label: "Email" },
+];
+
+/** The WhatsApp prefix selector; anything else is typed with its own "+code". */
+export type PhoneCountry = "AR" | "UY";
+
+export const PHONE_COUNTRIES: { value: PhoneCountry; label: string; example: string }[] = [
+  { value: "AR", label: "🇦🇷 +54", example: "11 2345-6789" },
+  { value: "UY", label: "🇺🇾 +598", example: "99 123 456" },
+];
 
 /**
  * What NewsletterForm renders after a submit. `models` are the labels that went through,
@@ -8,38 +31,10 @@ import { parseModels, type BoatModel } from "./boat-models";
  */
 export type NewsletterState =
   | { status: "idle" }
-  | { status: "ok"; models: string[] }
+  | { status: "ok"; channel: ContactChannel; models: string[] }
   | { status: "error"; message: string };
 
 export const NEWSLETTER_IDLE: NewsletterState = { status: "idle" };
 
 /** Hidden field a person never sees; a bot filling every input does. */
 export const HONEYPOT_FIELD = "website";
-
-export type NewsletterInput = { email: string; models: BoatModel[] };
-
-export type ParsedNewsletterForm =
-  | { kind: "ok"; input: NewsletterInput }
-  | { kind: "bot" }
-  | { kind: "invalid"; message: string };
-
-// RFC 5321 caps an address at 254 characters.
-const MAX_EMAIL = 254;
-// Stricter than <input type="email">, which accepts "a@b": a newsletter to a domain
-// without a dot can only bounce, so the server asks for one.
-const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
-
-export function parseNewsletterForm(form: FormData): ParsedNewsletterForm {
-  const honeypot = form.get(HONEYPOT_FIELD);
-  if (typeof honeypot === "string" && honeypot.trim() !== "") return { kind: "bot" };
-
-  const raw = form.get("email");
-  const email = typeof raw === "string" ? raw.trim().toLowerCase() : "";
-  if (!email) return { kind: "invalid", message: "Ingresá tu email." };
-  if (email.length > MAX_EMAIL || !EMAIL_RE.test(email)) {
-    return { kind: "invalid", message: "Ese email no parece válido. Revisalo y probá de nuevo." };
-  }
-
-  const slugs = form.getAll("models").filter((v): v is string => typeof v === "string");
-  return { kind: "ok", input: { email, models: parseModels(slugs) } };
-}

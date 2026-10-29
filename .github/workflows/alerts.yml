@@ -1,0 +1,34 @@
+name: Alerts
+
+# Newsletter alerts (docs/NEWSLETTER-PLAN.md §6): every 15 minutes, ask the site to
+# message the subscribers of any boat published since the last run. The work happens in
+# app/api/alerts/run; this only knocks on the door with the shared secret.
+# Inert until enabled: set repo variable ALERTS_ENABLED=true and the secret CRON_SECRET
+# (the same value as the CRON_SECRET env var in Vercel).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+
+jobs:
+  run:
+    if: vars.ALERTS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Run the alerts
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://www.mgnauticabroker.com' }}
+        # middleware.ts turns away anonymous scripts, so the call says who it is. The www
+        # host is the real one: the bare domain answers a 307 that a POST would not follow.
+        run: |
+          curl --fail-with-body --silent --show-error --max-time 90 \
+            -X POST \
+            -A "mg-nautica-alerts" \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            "$SITE_URL/api/alerts/run"

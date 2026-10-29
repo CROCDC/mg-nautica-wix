@@ -2,23 +2,36 @@
  * E2E: subscribing to the newsletter and following boat models.
  *
  * The form's success text is the least interesting assertion here. What matters is
- * what reached Wix — a contact carrying the "Newsletter" label plus one label per
- * model, and an email subscription set to SUBSCRIBED — because that is what the owner
- * segments a campaign by. The mock fakes those CRM writes and logs them (see
- * fakeCrmWrite in mock/wix-http-mock.mjs), so each test reads back what was sent.
+ * what reached Wix — a contact carrying the "Newsletter" and channel labels plus one
+ * label per model, with a WhatsApp number in E.164 or an email subscribed to marketing —
+ * because that is what the owner filters by to send an alert. The mock fakes those CRM
+ * writes and logs them (see fakeCrmWrite in mock/wix-http-mock.mjs), so each test reads
+ * back what was sent.
  *
  * Boats are picked in a single predictive field: type, and it suggests models from the
  * list (sail and motor together); Enter or a click adds one as a tag, as many as wanted.
+ * The alert goes by WhatsApp (the default) or by email — email only while WhatsApp is
+ * switched off in code (WHATSAPP_ENABLED).
  */
 
 import { test, expect, type Page } from "./fixtures";
-import { readWixWrites, uniqueEmail } from "./helpers/wix-writes";
+import { readWixWrites, uniqueEmail, uniquePhone } from "./helpers/wix-writes";
+import { WHATSAPP_ENABLED } from "@/lib/newsletter-form";
+import { SAMPLE_PRODUCT_SLUG } from "./pages";
+
+// The WhatsApp flows wait, skipped, while the channel is switched off in code.
+const whatsappTest = WHATSAPP_ENABLED ? test : test.skip;
+const whatsappOffTest = WHATSAPP_ENABLED ? test.skip : test;
 
 const field = (page: Page) => page.getByRole("combobox", { name: "Embarcaciones que buscás" });
-const options = (page: Page) => page.getByRole("option");
+// Scoped to the suggestions: the country prefix <select> has options of its own.
+const options = (page: Page) => page.getByRole("listbox").getByRole("option");
 const tags = (page: Page) => page.locator(".nl-tag-name");
+const phone = (page: Page) => page.getByLabel("Tu número de WhatsApp");
+const prefix = (page: Page) => page.getByLabel("Código de país");
 const email = (page: Page) => page.getByLabel("Tu email");
-const submit = (page: Page) => page.getByRole("button", { name: "Activar alertas" }).click();
+const channel = (page: Page, name: "WhatsApp" | "Email") => page.getByRole("radio", { name });
+const submit = (page: Page) => page.getByRole("button", { name: "Crear mi alerta" }).click();
 
 // By class rather than role: Next's route announcer is also a role="alert" in the page.
 const done = (page: Page) => page.locator(".nl-done");
@@ -30,13 +43,20 @@ async function addBoat(page: Page, typed: string) {
   await field(page).press("Enter");
 }
 
-/** The createContact request the app sent for this address, if any. */
-function contactWrite(address: string) {
-  return readWixWrites().find(
-    (w) =>
-      w.path.endsWith("/contacts/v4/contacts") &&
-      JSON.stringify(w.body).includes(`"email":"${address}"`),
-  );
+async function useEmail(page: Page, address: string) {
+  if (WHATSAPP_ENABLED) await channel(page, "Email").check();
+  await email(page).fill(address);
+}
+
+/** The latest createContact request carrying this email or phone, if any. */
+function contactWrite(contact: string) {
+  return readWixWrites()
+    .filter(
+      (w) =>
+        w.path.endsWith("/contacts/v4/contacts") &&
+        JSON.stringify(w.body).includes(`"${contact}"`),
+    )
+    .at(-1);
 }
 
 function subscriptionWrite(address: string) {
@@ -47,29 +67,43 @@ function subscriptionWrite(address: string) {
   );
 }
 
-// ----- The happy path -----------------------------------------------------------
+// ----- WhatsApp (the default when it is on) -----------------------------------------
 
-test("visitor adds several boats and subscribes", async ({ page }) => {
-  const address = uniqueEmail();
+whatsappOffTest("with WhatsApp off, the form asks for an email only", async ({ page }) => {
   await page.goto("/newsletter");
 
+  await expect(page.getByRole("radio")).toHaveCount(0);
+  await expect(phone(page)).toHaveCount(0);
+  await expect(page.locator(".nl-legal")).not.toContainText("BAJA");
+  await expect(email(page)).toBeVisible();
+});
+
+
+whatsappTest("visitor adds several boats and subscribes by WhatsApp", async ({ page }) => {
+  const number = uniquePhone();
+  await page.goto("/newsletter");
+
+  await expect(channel(page, "WhatsApp")).toBeChecked();
   await addBoat(page, "colib");
   await addBoat(page, "brie");
   await addBoat(page, "trento"); // a motor model, from the same field
   await expect(tags(page)).toHaveText(["Colibrí", "Bries", "Trento"]);
-  await email(page).fill(address);
+  // Typed the way people write their own mobile: no 9, no 15.
+  await phone(page).fill(number.typed);
   await submit(page);
 
-  await expect(done(page)).toContainText("Tus alertas están activas");
-  await expect(done(page)).toContainText("apenas ingrese un Colibrí, Bries o Trento");
+  await expect(done(page)).toContainText("tu alerta quedó creada");
+  await expect(done(page)).toContainText("por WhatsApp apenas ingrese un Colibrí, Bries o Trento");
   await expect(done(page)).toBeFocused();
 
-  expect(contactWrite(address)?.body).toMatchObject({
+  const create = contactWrite(number.e164);
+  expect(create?.body).toEqual({
     info: {
-      emails: { items: [{ email: address, tag: "MAIN" }] },
+      phones: { items: [{ phone: number.e164, countryCode: "AR", tag: "MOBILE", primary: true }] },
       labelKeys: {
         items: [
           "custom.newsletter",
+          "custom.canal-whatsapp",
           "custom.modelo-colibri",
           "custom.modelo-bries",
           "custom.modelo-trento",
@@ -77,6 +111,53 @@ test("visitor adds several boats and subscribes", async ({ page }) => {
       },
     },
   });
+});
+
+whatsappTest("the Uruguay prefix reaches Wix as a +598 number", async ({ page }) => {
+  const digits = String(Math.floor(Math.random() * 1e6)).padStart(6, "0");
+  await page.goto("/newsletter");
+
+  await prefix(page).selectOption("UY");
+  await expect(phone(page)).toHaveAttribute("placeholder", "99 123 456");
+  await phone(page).fill(`099 ${digits}`);
+  await submit(page);
+
+  await expect(done(page)).toContainText("por WhatsApp");
+  expect(contactWrite(`+59899${digits}`)?.body).toMatchObject({
+    info: { phones: { items: [{ phone: `+59899${digits}`, countryCode: "UY" }] } },
+  });
+});
+
+whatsappTest("a number without area code is rejected and the form keeps everything", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await addBoat(page, "limbo");
+  await phone(page).fill("15 2694 9628");
+  await submit(page);
+
+  await expect(failure(page)).toContainText("código de área");
+  await expect(phone(page)).toHaveValue("15 2694 9628");
+  await expect(tags(page)).toHaveText(["Limbo"]);
+});
+
+// ----- Email ------------------------------------------------------------------------
+
+test("visitor subscribes by email instead", async ({ page }) => {
+  const address = uniqueEmail();
+  await page.goto("/newsletter");
+
+  await addBoat(page, "plena");
+  await useEmail(page, address);
+  await submit(page);
+
+  await expect(done(page)).toContainText("por email apenas ingrese un Plenamar");
+  expect(contactWrite(address)?.body).toEqual({
+    info: {
+      emails: { items: [{ email: address, tag: "MAIN", primary: true }] },
+      labelKeys: { items: ["custom.newsletter", "custom.canal-email", "custom.modelo-plenamar"] },
+    },
+  });
+  // Email Marketing only mails contacts who opted in.
   expect(subscriptionWrite(address)?.body).toEqual({
     subscription: { email: address, subscriptionStatus: "SUBSCRIBED" },
   });
@@ -86,14 +167,14 @@ test("subscribing without picking boats still subscribes", async ({ page }) => {
   const address = uniqueEmail();
   await page.goto("/newsletter");
 
-  await email(page).fill(address);
+  await useEmail(page, address);
   await submit(page);
 
   await expect(done(page)).toContainText("novedades del catálogo");
   expect(contactWrite(address)?.body).toMatchObject({
-    info: { labelKeys: { items: ["custom.newsletter"] } },
+    // Picking nothing is following everything.
+    info: { labelKeys: { items: ["custom.newsletter", "custom.canal-email", "custom.modelo-todos"] } },
   });
-  expect(subscriptionWrite(address)).toBeTruthy();
 });
 
 test("an email already in the CRM gets the new models added", async ({ page }) => {
@@ -102,7 +183,7 @@ test("an email already in the CRM gets the new models added", async ({ page }) =
   await page.goto("/newsletter");
 
   await addBoat(page, "plena");
-  await email(page).fill(address);
+  await useEmail(page, address);
   await submit(page);
 
   await expect(done(page)).toContainText("apenas ingrese un Plenamar");
@@ -115,8 +196,19 @@ test("an email already in the CRM gets the new models added", async ({ page }) =
   // The labels go onto the contact Wix pointed at, not onto a second one.
   const labelled = readWixWrites().find((w) => w.path.endsWith(`/contacts/${existingId}/labels`));
   expect(labelled?.body).toMatchObject({
-    labelKeys: ["custom.newsletter", "custom.modelo-plenamar"],
+    labelKeys: ["custom.newsletter", "custom.canal-email", "custom.modelo-plenamar"],
   });
+});
+
+whatsappTest("switching channel keeps what was typed in each", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await phone(page).fill("11 2694-9628");
+  await useEmail(page, "nombre@ejemplo.com");
+  await channel(page, "WhatsApp").check();
+  await expect(phone(page)).toHaveValue("11 2694-9628");
+  await channel(page, "Email").check();
+  await expect(email(page)).toHaveValue("nombre@ejemplo.com");
 });
 
 // ----- The predictive field --------------------------------------------------------
@@ -192,7 +284,7 @@ test("Escape closes the suggestions without adding anything", async ({ page }) =
 test("Enter in the field never submits the form", async ({ page }) => {
   await page.goto("/newsletter");
 
-  await email(page).fill(uniqueEmail());
+  await useEmail(page, uniqueEmail());
   await field(page).fill("zzz");
   await field(page).press("Enter");
 
@@ -227,7 +319,7 @@ test("an address the browser accepts but the server rejects keeps the form", asy
   await page.goto("/newsletter");
 
   await addBoat(page, "limbo");
-  await email(page).fill("nombre@dominio");
+  await useEmail(page, "nombre@dominio");
   await submit(page);
 
   await expect(failure(page)).toContainText("no parece válido");
@@ -241,7 +333,7 @@ test("Wix failing shows a retry message and keeps the boats", async ({ page }) =
   await page.goto("/newsletter");
 
   await addBoat(page, "brie");
-  await email(page).fill(address);
+  await useEmail(page, address);
   await submit(page);
 
   await expect(failure(page)).toContainText("Probá de nuevo");
@@ -256,11 +348,11 @@ test("a filled honeypot looks like success and never reaches Wix", async ({ page
   const address = uniqueEmail();
   await page.goto("/newsletter");
 
-  await email(page).fill(address);
+  await useEmail(page, address);
   await page.locator('input[name="website"]').fill("https://spam.example");
   await submit(page);
 
-  await expect(done(page)).toContainText("Tus alertas están activas");
+  await expect(done(page)).toContainText("tu alerta quedó creada");
   expect(contactWrite(address)).toBeUndefined();
   expect(subscriptionWrite(address)).toBeUndefined();
 });
@@ -277,12 +369,104 @@ test("the home promo opens the form", async ({ page }) => {
   await expect(field(page)).toBeVisible();
 });
 
+test("a home example opens the form on that model", async ({ page }) => {
+  await page.goto("/");
+
+  await page.locator(".nl-promo").getByRole("link", { name: "Colibrí" }).click();
+
+  await page.waitForURL(/\/newsletter\?modelo=colibri$/);
+  await expect(tags(page)).toHaveText(["Colibrí"]);
+});
+
+test("a catalog search for a model with no boat offers its alert", async ({ page }) => {
+  await page.goto("/category/all-products?q=colibri");
+
+  await expect(page.locator(".empty")).toContainText("Te avisamos por email cuando publiquemos un Colibrí");
+  await page.locator(".empty").getByRole("link", { name: "Crear mi alerta" }).click();
+
+  await page.waitForURL(/\/newsletter\?modelo=colibri$/);
+  await expect(tags(page)).toHaveText(["Colibrí"]);
+});
+
+test("catalog results for a model end with an alert for another one", async ({ page }) => {
+  await page.goto("/category/all-products?q=plenamar");
+
+  const strip = page.locator(".alert-strip");
+  await expect(strip).toContainText("cuando publiquemos otro Plenamar");
+  await expect(strip.getByRole("link", { name: "Crear mi alerta" })).toHaveAttribute(
+    "href",
+    "/newsletter?modelo=plenamar",
+  );
+});
+
+test("a boat page offers the alert for its own model", async ({ page }) => {
+  await page.goto(`/product-page/${SAMPLE_PRODUCT_SLUG}`);
+
+  const box = page.locator(".alert-box");
+  await expect(box).toContainText("Si entra otro Grumete, te avisamos por email.");
+  await box.getByRole("link", { name: "Crear mi alerta" }).click();
+
+  await page.waitForURL(/\/newsletter\?modelo=grumete$/);
+  await expect(tags(page)).toHaveText(["Grumete"]);
+});
+
+test("the footer band leads to the form, except on pages with their own", async ({ page }) => {
+  await page.goto("/services");
+  await page.locator(".footer-alerts").getByRole("link", { name: "Crear mi alerta" }).click();
+
+  await page.waitForURL(/\/newsletter$/);
+  await expect(page.locator(".footer-alerts")).toHaveCount(0);
+  await page.goto("/");
+  await expect(page.locator(".footer-alerts")).toHaveCount(0);
+});
+
+// ----- Register -----------------------------------------------------------------------
+
+const registerName = (page: Page, name: string) =>
+  page.locator(".nl-register").getByRole("button", { name, exact: true });
+
+test("tapping a name in the register picks it, tapping again drops it", async ({ page }) => {
+  await page.goto("/newsletter");
+
+  await registerName(page, "Bries").click();
+  await registerName(page, "Limbo").click();
+  await expect(tags(page)).toHaveText(["Bries", "Limbo"]);
+  await expect(registerName(page, "Bries")).toHaveAttribute("aria-pressed", "true");
+
+  await registerName(page, "Bries").click();
+  await expect(tags(page)).toHaveText(["Limbo"]);
+  await expect(registerName(page, "Bries")).toHaveAttribute("aria-pressed", "false");
+});
+
+test("the register reflects models typed in the field and arrived by link", async ({ page }) => {
+  await page.goto("/newsletter?modelo=plenamar");
+  await addBoat(page, "colib");
+
+  await expect(registerName(page, "Plenamar")).toHaveAttribute("aria-pressed", "true");
+  await expect(registerName(page, "Colibrí")).toHaveAttribute("aria-pressed", "true");
+});
+
+test("models picked in the register are the ones subscribed", async ({ page }) => {
+  const address = uniqueEmail();
+  await page.goto("/newsletter");
+
+  await registerName(page, "Trento").click();
+  await useEmail(page, address);
+  await submit(page);
+
+  await expect(done(page)).toContainText("apenas ingrese un Trento");
+  expect(JSON.stringify(contactWrite(address)?.body)).toContain('"custom.modelo-trento"');
+  await expect(page.locator(".nl-register")).toHaveCount(0);
+});
+
 // ----- Phone ------------------------------------------------------------------------
 
 test.describe("on a 375px phone", () => {
   test.use({ viewport: { width: 375, height: 667 } });
 
-  test("the field, its suggestions and the button fit the screen", async ({ page }) => {
+  test("the field, its suggestions, the number and the button fit the screen", async ({
+    page,
+  }) => {
     await page.goto("/newsletter");
 
     await addBoat(page, "brie");
@@ -292,8 +476,8 @@ test.describe("on a 375px phone", () => {
     for (const target of [
       field(page),
       page.getByRole("listbox"),
-      email(page),
-      page.getByRole("button", { name: "Activar alertas" }),
+      ...(WHATSAPP_ENABLED ? [prefix(page), phone(page)] : [email(page)]),
+      page.getByRole("button", { name: "Crear mi alerta" }),
     ]) {
       const box = await target.boundingBox();
       expect(box!.x).toBeGreaterThanOrEqual(0);
@@ -309,7 +493,7 @@ test.describe("on a 375px phone", () => {
     await page.goto("/newsletter");
 
     await addBoat(page, "colib");
-    await email(page).fill(uniqueEmail());
+    await useEmail(page, uniqueEmail());
     await submit(page);
 
     await expect(done(page)).toBeInViewport();

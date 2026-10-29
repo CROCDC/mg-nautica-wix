@@ -3,13 +3,16 @@
 import Link from "next/link";
 import { startTransition, useActionState, useEffect, useId, useRef, useState } from "react";
 import { subscribeToNewsletter } from "@/app/newsletter/actions";
-import { parseModels, suggestModels } from "@/lib/boat-models";
-import { HONEYPOT_FIELD, NEWSLETTER_IDLE } from "@/lib/newsletter-form";
-
-/** "Colibrí", "Colibrí o Bries", "Colibrí, Bries o Limbo". */
-function orList(items: string[]): string {
-  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} o ${items.at(-1)}`;
-}
+import { BOAT_MODELS, orList, parseModels, suggestModels } from "@/lib/boat-models";
+import {
+  CONTACT_CHANNELS,
+  HONEYPOT_FIELD,
+  NEWSLETTER_IDLE,
+  PHONE_COUNTRIES,
+  WHATSAPP_ENABLED,
+  type ContactChannel,
+  type PhoneCountry,
+} from "@/lib/newsletter-form";
 
 const fold = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -31,18 +34,19 @@ function Highlight({ label, query }: { label: string; query: string }) {
  * The confirmation replaces the form, so on a phone it can land above the viewport.
  * Focusing it scrolls it into view and moves screen readers along with it.
  */
-function Done({ models }: { models: string[] }) {
+function Done({ channel, models }: { channel: ContactChannel; models: string[] }) {
+  const via = channel === "whatsapp" ? "por WhatsApp" : "por email";
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), []);
   return (
     <div className="nl-card nl-done" role="status" tabIndex={-1} ref={ref}>
       <span className="nl-done-icon" aria-hidden="true">✓</span>
       <div>
-        <h2>¡Listo! Tus alertas están activas</h2>
+        <h2>Listo, tu alerta quedó creada</h2>
         <p>
           {models.length > 0
-            ? `Te escribimos apenas ingrese un ${orList(models)}.`
-            : "Te vamos a escribir con las novedades del catálogo."}
+            ? `Te escribimos ${via} apenas ingrese un ${orList(models)}.`
+            : `Te vamos a escribir ${via} con las novedades del catálogo.`}
         </p>
       </div>
       <Link className="btn btn-navy btn-sm" href="/category/all-products">
@@ -52,8 +56,23 @@ function Done({ models }: { models: string[] }) {
   );
 }
 
-export default function NewsletterForm({ initialModels = [] }: { initialModels?: string[] }) {
+/**
+ * `register` lays the whole model list beside the form, for a visitor who would rather
+ * browse the names than guess one to type.
+ */
+export default function NewsletterForm({
+  initialModels = [],
+  register = false,
+}: {
+  initialModels?: string[];
+  register?: boolean;
+}) {
   const [state, action, pending] = useActionState(subscribeToNewsletter, NEWSLETTER_IDLE);
+  // WhatsApp first: it is how this broker already talks to buyers. Each channel keeps
+  // its own value, so switching back and forth loses nothing typed.
+  const [channel, setChannel] = useState<ContactChannel>(WHATSAPP_ENABLED ? "whatsapp" : "email");
+  const [country, setCountry] = useState<PhoneCountry>("AR");
+  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [picked, setPicked] = useState<string[]>(initialModels);
   const [query, setQuery] = useState("");
@@ -62,7 +81,7 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
   const input = useRef<HTMLInputElement>(null);
   const id = useId();
 
-  if (state.status === "ok") return <Done models={state.models} />;
+  if (state.status === "ok") return <Done channel={state.channel} models={state.models} />;
 
   const pickedModels = parseModels(picked);
   const options = suggestModels(query, picked);
@@ -79,6 +98,11 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
   function remove(slug: string) {
     setPicked((cur) => cur.filter((s) => s !== slug));
     input.current?.focus();
+  }
+  // From the register focus stays on the name: moving it to the field would pop the
+  // keyboard on a phone after every tap.
+  function toggle(slug: string) {
+    setPicked((cur) => (cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug]));
   }
 
   // A combobox: ↑/↓ move through the suggestions, Enter adds the highlighted one,
@@ -113,7 +137,27 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
     startTransition(() => action(data));
   }
 
-  return (
+  const emailInput = (
+    <input
+      id={`${id}-email`}
+      type="email"
+      name="email"
+      className="nl-input"
+      aria-label="Tu email"
+      required
+      autoComplete="email"
+      placeholder="tu@email.com"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+    />
+  );
+  const submitButton = (
+    <button className="btn btn-primary" type="submit" disabled={pending}>
+      {pending ? "Creando…" : "Crear mi alerta"}
+    </button>
+  );
+
+  const form = (
     <form className="nl-card" action={action} onSubmit={submit}>
       <div className="nl-field">
         <label className="nl-field-label" htmlFor={`${id}-boats`}>
@@ -191,27 +235,70 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
         </p>
       </div>
 
-      <div className="nl-field">
-        <label className="nl-field-label" htmlFor={`${id}-email`}>
-          Tu email
-        </label>
-        <div className="nl-email-row">
-          <input
-            id={`${id}-email`}
-            type="email"
-            name="email"
-            className="nl-input"
-            required
-            autoComplete="email"
-            placeholder="tu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <button className="btn btn-primary" type="submit" disabled={pending}>
-            {pending ? "Activando…" : "Activar alertas"}
-          </button>
+      {WHATSAPP_ENABLED ? (
+        <fieldset className="nl-field">
+          <legend className="nl-field-label">¿Cómo te avisamos?</legend>
+          <div className="nl-channels">
+            {CONTACT_CHANNELS.map((c) => (
+              <label key={c.value} className="nl-channel">
+                <input
+                  type="radio"
+                  name="channel"
+                  value={c.value}
+                  checked={channel === c.value}
+                  onChange={() => setChannel(c.value)}
+                />
+                {c.label}
+              </label>
+            ))}
+          </div>
+          <div className="nl-contact-row">
+            {channel === "whatsapp" ? (
+              <div className="nl-phone">
+                <select
+                  name="country"
+                  aria-label="Código de país"
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value as PhoneCountry)}
+                >
+                  {PHONE_COUNTRIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  name="phone"
+                  aria-label="Tu número de WhatsApp"
+                  required
+                  inputMode="tel"
+                  autoComplete="tel-national"
+                  placeholder={PHONE_COUNTRIES.find((c) => c.value === country)!.example}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+            ) : (
+              emailInput
+            )}
+            {submitButton}
+          </div>
+          {channel === "whatsapp" && (
+            <p className="nl-hint">Con código de área. De otro país, escribilo con +código.</p>
+          )}
+        </fieldset>
+      ) : (
+        <div className="nl-field">
+          <label className="nl-field-label" htmlFor={`${id}-email`}>
+            Tu email
+          </label>
+          <div className="nl-contact-row">
+            {emailInput}
+            {submitButton}
+          </div>
         </div>
-      </div>
+      )}
 
       {state.status === "error" && (
         <div className="alert alert-error" role="alert">
@@ -220,7 +307,9 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
       )}
 
       <p className="nl-legal">
-        Solo te escribimos sobre embarcaciones de MG Náutica. Te das de baja desde cualquier email.
+        {channel === "whatsapp"
+          ? "Solo te escribimos sobre embarcaciones de MG Náutica. Respondé BAJA a cualquier aviso y no te escribimos más."
+          : "Solo te escribimos sobre embarcaciones de MG Náutica. Te das de baja desde cualquier email."}
       </p>
 
       {/* Honeypot: off-screen and skipped by keyboard and autofill; only a bot fills it. */}
@@ -231,5 +320,25 @@ export default function NewsletterForm({ initialModels = [] }: { initialModels?:
         </label>
       </div>
     </form>
+  );
+
+  if (!register) return form;
+  return (
+    <div className="nl-layout">
+      {form}
+      <section className="nl-register" aria-labelledby={`${id}-register`}>
+        <h2 id={`${id}-register`}>Modelos que podés seguir</h2>
+        <p>Tocá los que buscás y se suman a tu alerta.</p>
+        <ul>
+          {BOAT_MODELS.map((m) => (
+            <li key={m.slug}>
+              <button type="button" aria-pressed={picked.includes(m.slug)} onClick={() => toggle(m.slug)}>
+                {m.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
   );
 }

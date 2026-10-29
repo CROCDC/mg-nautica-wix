@@ -58,7 +58,9 @@ public/
 See [.env.example](./.env.example). The only one needed to run the storefront is
 `NEXT_PUBLIC_WIX_CLIENT_ID` (Wix OAuth public client id — Wix dashboard → Settings → Headless).
 `WIX_API_KEY` + `WIX_SITE_ID` are server-only; the newsletter needs them to write subscribers
-into the Wix CRM (see [docs/NEWSLETTER-PLAN.md](./docs/NEWSLETTER-PLAN.md)).
+into the Wix CRM, and the automatic WhatsApp alerts add `CRON_SECRET` and the `WHATSAPP_*`
+variables (see [docs/NEWSLETTER-PLAN.md](./docs/NEWSLETTER-PLAN.md) §5–6). WhatsApp is
+switched off for now (`WHATSAPP_ENABLED` in `lib/newsletter-form.ts`): the form takes email only.
 
 ## Deploy pipeline
 
@@ -66,6 +68,9 @@ GitHub Actions owns the deploy (see plan §4):
 
 - **`.github/workflows/ci.yml`** — runs on every push/PR: `lint`, `typecheck`, `build`. Set it
   as a **required check** on `main` in branch protection.
+- **`.github/workflows/alerts.yml`** — every 15 minutes, calls `/api/alerts/run` to send the
+  newsletter's WhatsApp alerts for newly published boats. Inert until the repo variable
+  `ALERTS_ENABLED=true` and the secret `CRON_SECRET` are set.
 - **`.github/workflows/deploy.yml`** — PR → Vercel **Preview**, `main` → **Production**.
   It is **inert until enabled**: set the repo variable `DEPLOY_ENABLED=true` and the secrets
   `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (get the IDs with `vercel link`). Turn

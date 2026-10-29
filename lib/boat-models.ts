@@ -8,9 +8,15 @@
 // kind of boat adds nothing to finding it. Each entry becomes a Wix contact label (see
 // modelLabel), so renaming a `label` starts a new label in the CRM; the old contacts
 // keep the old one.
-export type BoatModel = { slug: string; label: string };
+export type BoatModel = {
+  slug: string;
+  label: string;
+  /** Other spellings the owner has used in listing names, for modelsInListing. */
+  aliases?: string[];
+};
 
-const model = (slug: string, label: string): BoatModel => ({ slug, label });
+const model = (slug: string, label: string, aliases?: string[]): BoatModel =>
+  aliases ? { slug, label, aliases } : { slug, label };
 
 export const BOAT_MODELS: BoatModel[] = [
   model("alpha", "Alpha"),
@@ -26,7 +32,7 @@ export const BOAT_MODELS: BoatModel[] = [
   model("corum", "Corum"),
   model("cp-26", "CP 26"),
   model("custon", "Custon"),
-  model("dangelo", "D'Angelo"),
+  model("dangelo", "D'Angelo", ["Dangelo"]),
   model("del-plata", "Del Plata"),
   model("dolphin", "Dolphin"),
   model("drakkar", "Drakkar"),
@@ -38,7 +44,7 @@ export const BOAT_MODELS: BoatModel[] = [
   model("h26", "H26"),
   model("holland", "Holland"),
   model("jeanneau", "Jeanneau"),
-  model("kripton", "Kripton"),
+  model("kripton", "Kripton", ["Krypton"]),
   model("limbo", "Limbo"),
   model("longarela", "Longarela"),
   model("mamba", "Mamba"),
@@ -59,7 +65,7 @@ export const BOAT_MODELS: BoatModel[] = [
   model("s2", "S2"),
   model("sailor", "Sailor"),
   model("sea-ray", "Sea Ray"),
-  model("seidelmann", "Seidelmann"),
+  model("seidelmann", "Seidelmann", ["Seildelmann"]),
   model("sosiego", "Sosiego"),
   model("super-22", "Super 22"),
   model("trento", "Trento"),
@@ -80,6 +86,17 @@ export function parseModels(raw: readonly string[]): BoatModel[] {
     }
   }
   return out;
+}
+
+/** "Colibrí", "Colibrí o Bries", "Colibrí, Bries o Limbo". */
+export function orList(items: readonly string[]): string {
+  return items.length < 2 ? items.join("") : `${items.slice(0, -1).join(", ")} o ${items.at(-1)}`;
+}
+
+/** The newsletter form with these models already picked (see app/newsletter/page.tsx). */
+export function alertHref(models: readonly BoatModel[]): string {
+  const qs = new URLSearchParams(models.map((m) => ["modelo", m.slug])).toString();
+  return qs ? `/newsletter?${qs}` : "/newsletter";
 }
 
 /** The Wix contact label a model is stored under — what the owner segments a campaign by. */
@@ -110,4 +127,24 @@ export function suggestModels(query: string, exclude: readonly string[] = [], li
     .sort((a, b) => a.r - b.r)
     .slice(0, limit)
     .map(({ m }) => m);
+}
+
+/** Lowercase, accents and symbols (emoji, "|", "–") folded to single spaces. */
+const words = (s: string) =>
+  ` ${norm(s).replace(/[^a-z0-9]+/g, " ").trim()} `;
+
+/**
+ * The models a catalog listing is a boat of, read off its name — what decides who gets
+ * an alert when it is published. Whole words only, so "Roy" does not fire on "Royal".
+ *
+ * This reads text, which the owner's rule otherwise avoids (see lib/boat-type.ts for the
+ * one other place): there is no Wix field for the model. The owner names listings
+ * consistently ("VELERO PLENAMAR 23 | …"), every current name is pinned in the unit
+ * tests, and a spelling the owner uses that the list does not know goes in `aliases`.
+ */
+export function modelsInListing(name: string): BoatModel[] {
+  const listing = words(name);
+  return BOAT_MODELS.filter((m) =>
+    [m.label, ...(m.aliases ?? [])].some((spelling) => listing.includes(words(spelling))),
+  );
 }

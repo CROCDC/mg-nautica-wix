@@ -32,6 +32,12 @@ for (const item of NAV) {
   });
 }
 
+test("the desktop bar keeps its eight items; the alerts link waits in the burger", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page.locator(".nav-links").getByRole("link", { name: "Alertas por modelo" })).toBeHidden();
+});
+
 test("brand link returns the visitor home from a deep page", async ({ page }) => {
   await page.goto("/contact");
 
@@ -99,7 +105,17 @@ test.describe("on a 375px phone", () => {
     await expect(page.locator(links)).not.toBeVisible();
   });
 
-  test("tapping outside the header closes the menu", async ({ page }) => {
+  test("the burger menu leads to the model alerts", async ({ page }) => {
+    await page.goto("/");
+
+    await page.locator(burger).click();
+    await page.locator(links).getByRole("link", { name: "Alertas por modelo" }).click();
+
+    await page.waitForURL("**/newsletter");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Alertas por modelo");
+  });
+
+    test("tapping outside the header closes the menu", async ({ page }) => {
     await page.goto("/");
     await page.locator(burger).click();
     await expect(page.locator(links)).toBeVisible();
@@ -121,7 +137,7 @@ test("footer company links reach their pages", async ({ page }) => {
     { label: "Servicios", path: "/services" },
     { label: "Vendé tu embarcación", path: "/sell-your-boat" },
     { label: "Contacto", path: "/contact" },
-    { label: "Newsletter", path: "/newsletter" },
+    { label: "Alertas por modelo", path: "/newsletter" },
   ];
 
   for (const link of links) {
