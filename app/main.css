@@ -925,12 +925,6 @@ nexttech-footer { display: block; background: #060F1E; padding: .75rem 0; }
 .pi-hero .pa-lockup-mg { font-size: 1.55rem; }
 .pi-hero .pa-lockup-mg img { height: 48px; }
 
-.pi-band { margin: 0; }
-.pi-band-media { position: relative; height: clamp(260px, 46vw, 640px); background: var(--navy); }
-.pi-band-media img { object-fit: cover; object-position: center 60%; }
-.pi-band figcaption { padding-top: .9rem; font-size: .95rem; }
-.pi-band figcaption a { color: var(--navy); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
-
 .pa-band-grid { display: grid; grid-template-columns: 5fr 6fr; gap: 4rem; align-items: center; }
 .pa-band-media { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 1; background: var(--surface); }
 .pa-band-media img { width: 100%; height: 100%; object-fit: cover; object-position: 62% center; }

@@ -1,9 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import InsuranceQuote from "@/components/InsuranceQuote";
-import { PHOTOS } from "@/app/thalia/thalia";
-import { wixImageUrl } from "@/lib/wix-image";
 import { AllianceLockup } from "@/components/ParradoBand";
 import {
   CAR_DISCOUNT,
@@ -116,21 +113,6 @@ export default async function Insurance({
           </div>
         </div>
       </section>
-
-      <figure className="pi-band">
-        <div className="pi-band-media">
-          <Image
-            src={wixImageUrl(PHOTOS.aerial, 2000, 1125, { q: 80 })}
-            alt={PHOTOS.aerial.alt}
-            fill
-            sizes="100vw"
-          />
-        </div>
-        <figcaption className="container">
-          <Link href="/thalia">Thalia</Link>, el motovelero clásico de 1931 que vendemos, fondeado
-          frente a la costa.
-        </figcaption>
-      </figure>
 
       <section className="section section-surface pi-since">
         <div className="container pi-since-grid">
