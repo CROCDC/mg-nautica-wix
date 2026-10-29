@@ -77,6 +77,8 @@ const REDIRECTS = [
   { from: "/quienes-somos", to: "/about-us" },
   { from: "/servicios", to: "/services" },
   { from: "/vender-tu-embarcacion", to: "/sell-your-boat" },
+  // Not a legacy URL: the short alias printed in the Parrado Seguros campaign.
+  { from: "/seguros", to: "/insurance" },
 ];
 
 for (const { from, to } of REDIRECTS) {

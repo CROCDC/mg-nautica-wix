@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
+import { PARRADO_LOGO } from "@/lib/parrado";
 
 const WHATSAPP_URL = "https://wa.me/5491126949628";
 
@@ -14,6 +16,7 @@ const BOAT_LINKS = [
 const COMPANY_LINKS = [
   { href: "/about-us", label: "Quiénes somos" },
   { href: "/services", label: "Servicios" },
+  { href: "/insurance", label: "Seguros" },
   { href: "/sell-your-boat", label: "Vendé tu embarcación" },
   { href: "/contact", label: "Contacto" },
   { href: "/newsletter", label: "Newsletter" },
@@ -79,6 +82,15 @@ export default function Footer() {
               </svg>
             </a>
           </div>
+          <Link className="footer-partner" href="/insurance">
+            Aseguradora aliada
+            <Image
+              src={PARRADO_LOGO.light.src}
+              alt={PARRADO_LOGO.alt}
+              width={PARRADO_LOGO.light.width}
+              height={PARRADO_LOGO.light.height}
+            />
+          </Link>
         </div>
         <div className="footer-col">
           <h4>Embarcaciones</h4>

@@ -49,6 +49,17 @@
         { sel: ".content-2col > *",   step: 120 },
         { sel: ".step-list li",       step: 80 },
         { sel: ".footer-col",         step: 60 },
+        { sel: ".pa-mention",         step: 0 },
+        { sel: ".pa-band-media",      step: 0 },
+        { sel: ".pa-band-text > *",   step: 70 },
+        { sel: ".pi-split-head > *",  step: 80 },
+        { sel: ".pi-sea",             step: 0 },
+        { sel: ".pi-offer",           step: 90 },
+        { sel: ".pi-since-media",     step: 0 },
+        { sel: ".pi-since-text > *",  step: 70 },
+        { sel: ".pi-quote-head > *",  step: 80 },
+        { sel: ".pq-form",            step: 0 },
+        { sel: ".pq-preview",         step: 0 },
     ];
 
     revealGroups.forEach(function (g) {

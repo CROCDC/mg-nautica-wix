@@ -21,6 +21,7 @@ export const PUBLIC_PAGES: string[] = [
   "/brazil-course",
   "/thalia",
   "/services",
+  "/insurance",
   "/sell-your-boat",
   "/about-us",
   "/contact",
