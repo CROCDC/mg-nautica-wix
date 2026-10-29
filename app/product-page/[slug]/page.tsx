@@ -5,6 +5,8 @@ import { getBoatBySlug, formatUsd, ricosToPlainText } from "@/lib/wix";
 import Gallery from "@/components/Gallery";
 import RichText from "@/components/RichText";
 import { LANDING_BY_SLUG } from "@/lib/landings";
+import Image from "next/image";
+import { CAR_DISCOUNT, HOME_DISCOUNT, PARRADO_LOGO, insuranceHref } from "@/lib/parrado";
 
 // Always fetch the latest from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -129,6 +131,21 @@ export default async function ProductPage({
               Coordinamos visitas y respondemos consultas por WhatsApp. Gestión integral de la
               compra, trámites y traslado.
             </p>
+          </div>
+          <div className="sidebar-box sidebar-insure">
+            <Image
+              src={PARRADO_LOGO.color.src}
+              alt={PARRADO_LOGO.alt}
+              width={PARRADO_LOGO.color.width}
+              height={PARRADO_LOGO.color.height}
+            />
+            <p>
+              Asegurala con Parrado Seguros y sumá descuentos: {CAR_DISCOUNT}% en tu auto y{" "}
+              {HOME_DISCOUNT}% en tu hogar.
+            </p>
+            <Link className="btn btn-outline" href={insuranceHref(boat.name)}>
+              Cotizar el seguro
+            </Link>
           </div>
         </aside>
       </div>

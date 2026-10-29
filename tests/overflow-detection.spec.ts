@@ -19,6 +19,8 @@ import { test, expect, newBlockedContext } from "./fixtures";
 import { PUBLIC_PAGES } from "./pages";
 
 test("no overflow-x hidden on html or body", async ({ browser }) => {
+  // One test walks every public page; under a full parallel run that outgrows the 30s default.
+  test.setTimeout(60_000);
   const context = await newBlockedContext(browser, { width: 375, height: 667 });
   const page = await context.newPage();
   const failures: string[] = [];

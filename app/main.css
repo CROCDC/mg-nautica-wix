@@ -101,12 +101,13 @@ h3 { font-size: 1.2rem; font-weight: 600; }
 .brand span { color: var(--gold); }
 
 .nav-links {
-  list-style: none; display: flex; align-items: center; gap: .15rem;
+  list-style: none; display: flex; align-items: center; gap: 0;
   flex: 1; justify-content: center; flex-wrap: wrap;
 }
+/* Tight horizontal padding: the nine links have to fit on one line from 1280px up. */
 .nav-links a {
   color: rgba(255,255,255,.8); font-size: .9rem; font-weight: 500;
-  padding: .4rem .55rem; border-radius: var(--radius-sm);
+  padding: .4rem .4rem; border-radius: var(--radius-sm);
   transition: var(--transition);
 }
 .nav-links a:hover, .nav-links a.active { color: #fff; background: rgba(255,255,255,.1); }
@@ -619,7 +620,7 @@ nexttech-footer { display: block; background: #060F1E; padding: .75rem 0; }
 .nav-links a { position: relative; }
 .nav-links a::after {
   content: '';
-  position: absolute; bottom: 2px; left: .55rem; right: .55rem;
+  position: absolute; bottom: 2px; left: .4rem; right: .4rem;
   height: 1px; background: var(--gold);
   transform: scaleX(0); transform-origin: center;
   transition: transform .22s cubic-bezier(.22,1,.36,1);
@@ -906,4 +907,198 @@ nexttech-footer { display: block; background: #060F1E; padding: .75rem 0; }
   .bl-equip-grid { margin-top: 2.75rem; }
   .bl-spec-row { padding: .65rem .9rem; font-size: .88rem; }
   .bl-actions { flex-direction: column; }
+}
+
+/* ── Parrado Seguros alliance (home/services band, /insurance) ── */
+.pa-lockup { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem 1rem; }
+.pa-lockup-mg {
+  display: inline-flex; align-items: center; gap: .5rem; white-space: nowrap;
+  font-family: var(--ff-heading); font-size: 1.3rem; font-weight: 700; color: var(--navy);
+}
+.pa-lockup-mg span { color: var(--gold); }
+.pa-lockup-mg img { height: 40px; width: auto; }
+.pa-lockup-parrado { height: 56px; width: auto; }
+.pa-lockup-x { font-size: 1.4rem; line-height: 1; color: var(--muted); }
+.pa-lockup-light .pa-lockup-mg { color: #fff; }
+.pa-lockup-light .pa-lockup-x { color: rgba(255,255,255,.7); }
+.pi-hero .pa-lockup-parrado { height: 64px; }
+.pi-hero .pa-lockup-mg { font-size: 1.55rem; }
+.pi-hero .pa-lockup-mg img { height: 48px; }
+
+.pi-band { margin: 0; }
+.pi-band-media { position: relative; height: clamp(260px, 46vw, 640px); background: var(--navy); }
+.pi-band-media img { object-fit: cover; object-position: center 60%; }
+.pi-band figcaption { padding-top: .9rem; font-size: .95rem; }
+.pi-band figcaption a { color: var(--navy); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+
+.pa-band-grid { display: grid; grid-template-columns: 5fr 6fr; gap: 4rem; align-items: center; }
+.pa-band-media { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 1; background: var(--surface); }
+.pa-band-media img { width: 100%; height: 100%; object-fit: cover; object-position: 62% center; }
+.pa-band-text { display: flex; flex-direction: column; gap: 1.25rem; }
+.pa-band-text h2 { font-size: clamp(1.9rem, 3.6vw, 2.75rem); color: var(--navy); text-wrap: balance; }
+.pa-band-text > p { font-size: 1.08rem; max-width: 34rem; }
+.pa-figures { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin: .5rem 0; }
+.pa-figures > div {
+  display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: .35rem;
+  background: var(--surface); border-radius: var(--radius); padding: 1.1rem 1rem;
+}
+.pa-figures dd { font-family: var(--ff-heading); font-size: clamp(2rem, 3.6vw, 2.9rem); font-weight: 700; line-height: 1; color: var(--navy); }
+.pa-figures dd.pa-figure-word { font-size: clamp(1.3rem, 2.2vw, 1.6rem); line-height: 1.85; }
+.pa-figures dt { font-size: .9rem; color: var(--text); line-height: 1.35; }
+.pa-band-ctas { display: flex; gap: .75rem; flex-wrap: wrap; }
+
+.pi-hero { background: var(--navy); color: #fff; overflow: hidden; }
+.pi-hero-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;
+  padding-top: 4.5rem; padding-bottom: 4.5rem;
+}
+.pi-hero-text { display: flex; flex-direction: column; gap: 1.5rem; }
+.pi-hero h1 { color: #fff; font-size: clamp(2.6rem, 6vw, 4.75rem); line-height: 1.02; letter-spacing: -.02em; text-wrap: balance; }
+.pi-lead { font-size: 1.15rem; line-height: 1.6; color: rgba(255,255,255,.88); max-width: 32rem; }
+.pi-hero-ctas { display: flex; gap: .75rem; flex-wrap: wrap; }
+.pi-hero-media { margin: 0; border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 4 / 5; background: var(--navy-mid); }
+.pi-hero-media img { width: 100%; height: 100%; object-fit: cover; object-position: 30% center; }
+
+.pi-split-head { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: end; margin-bottom: 2.5rem; }
+.pi-split-head h2 { font-size: clamp(2rem, 4.4vw, 3.4rem); line-height: 1.05; color: var(--navy); text-wrap: balance; }
+.pi-split-head p { font-size: 1.08rem; max-width: 32rem; }
+.pi-split-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 1.5rem; }
+.pi-sea { display: flex; flex-direction: column; gap: .75rem; }
+.pi-sea-media { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 4 / 3; background: var(--surface); margin-bottom: .5rem; }
+.pi-sea-media img { width: 100%; height: 100%; object-fit: cover; }
+.pi-sea h3, .pi-offer h3 { font-size: 1.5rem; color: var(--navy); }
+.pi-sea p { max-width: 36rem; }
+.pi-land { display: grid; grid-template-rows: 1fr 1fr; gap: 1.5rem; }
+.pi-offer {
+  display: flex; flex-direction: column; justify-content: flex-end; gap: .5rem;
+  background: var(--surface); border-radius: var(--radius-lg); padding: 2rem;
+}
+.pi-offer-figure {
+  font-family: var(--ff-heading); font-weight: 700; color: var(--navy);
+  font-size: clamp(4rem, 8vw, 6.5rem); line-height: .9; letter-spacing: -.03em;
+}
+
+.pi-since-grid { display: grid; grid-template-columns: 5fr 7fr; gap: 4rem; align-items: center; }
+.pi-since-media { border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 3 / 4; background: var(--white); }
+.pi-since-media img { width: 100%; height: 100%; object-fit: cover; }
+.pi-since-text { display: flex; flex-direction: column; gap: 1rem; }
+.pi-since-year {
+  font-family: var(--ff-heading); font-weight: 700; color: var(--navy);
+  font-size: clamp(5rem, 13vw, 10rem); line-height: .85; letter-spacing: -.04em;
+}
+.pi-since-text h2 { font-size: clamp(1.6rem, 3vw, 2.25rem); color: var(--navy); }
+.pi-since-lead { font-size: 1.08rem; max-width: 36rem; }
+.pi-pillars { display: grid; grid-template-columns: 1fr 1fr; gap: 1.75rem 2.5rem; margin-top: 1rem; }
+.pi-pillars dt { font-family: var(--ff-heading); font-size: 1.2rem; font-weight: 700; color: var(--navy); margin-bottom: .3rem; }
+.pi-pillars dd { color: var(--text); }
+
+.pi-quote { background: var(--navy); color: #fff; }
+/* Anchors (#consulta, #seguros) land below the sticky header. */
+.pi-quote, .pa-band { scroll-margin-top: 68px; }
+.pi-quote-head { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: end; margin-bottom: 2.5rem; }
+.pi-quote-head h2 { color: #fff; font-size: clamp(2rem, 4.4vw, 3.4rem); line-height: 1.05; }
+.pi-quote-head p { font-size: 1.08rem; color: rgba(255,255,255,.88); max-width: 30rem; }
+
+.pq { display: grid; grid-template-columns: 7fr 5fr; gap: 1.5rem; align-items: start; }
+.pq-form { display: flex; flex-direction: column; gap: 1.5rem; }
+.pq-options { border: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.pq-options legend { font-size: 1.05rem; font-weight: 600; margin-bottom: .9rem; }
+.pq-option {
+  position: relative; display: flex; flex-direction: column; gap: .35rem; cursor: pointer;
+  padding: 1.25rem 1.1rem; border-radius: var(--radius-lg); min-height: 8.5rem; justify-content: flex-end;
+  background: rgba(255,255,255,.07); color: rgba(255,255,255,.88);
+  transition: background-color var(--transition), color var(--transition), transform .12s ease;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+}
+.pq-option:hover { background: rgba(255,255,255,.13); }
+.pq-option:active { transform: scale(.98); }
+.pq-option input { position: absolute; top: 1.1rem; right: 1.1rem; width: 1.3rem; height: 1.3rem; accent-color: var(--gold); cursor: pointer; }
+.pq-option input:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+.pq-option:has(input:checked) { background: #fff; color: var(--navy); }
+.pq-option-name { font-size: 1rem; font-weight: 600; }
+.pq-option-benefit { font-family: var(--ff-heading); font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+.pq-field { display: flex; flex-direction: column; gap: .45rem; font-weight: 600; max-width: 28rem; }
+.pq-field input {
+  font: inherit; font-weight: 400; font-size: 1rem; padding: .8rem 1rem; border-radius: var(--radius);
+  border: 2px solid transparent; background: #fff; color: var(--text);
+  transition: border-color var(--transition);
+}
+.pq-field input:focus-visible { outline: none; border-color: var(--gold); }
+.pq-status { font-weight: 400; font-size: .95rem; color: rgba(255,255,255,.88); }
+.pq-preview { display: flex; flex-direction: column; gap: 1rem; background: var(--navy-mid); border-radius: var(--radius-lg); padding: 1.75rem; }
+.pq-preview h3 { color: #fff; font-family: var(--ff-body); font-size: 1rem; font-weight: 600; }
+.pq-bubble {
+  white-space: pre-line; overflow-wrap: anywhere; background: #fff; color: var(--text);
+  padding: 1rem 1.15rem; border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) 4px; line-height: 1.55;
+}
+.pq-preview .btn { justify-content: center; }
+.pq-note { font-size: .9rem; color: rgba(255,255,255,.75); }
+
+/* Home: the insurer mentioned under the services, not a section of its own */
+.pa-mention {
+  display: flex; align-items: center; gap: 1rem 1.5rem; margin-top: 1.25rem;
+  background: #fff; border-radius: var(--radius-lg); padding: 1rem 1.5rem;
+}
+.pa-mention img { height: 44px; width: auto; flex-shrink: 0; }
+.pa-mention p { flex: 1; font-size: .95rem; }
+.pa-mention strong { color: var(--navy); }
+.pa-mention a {
+  flex-shrink: 0; font-weight: 600; color: var(--navy);
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.pa-mention a:hover { color: var(--gold); }
+.pa-mention a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+@media (max-width: 768px) {
+  .pa-mention { flex-wrap: wrap; padding: 1.1rem 1.25rem; }
+  .pa-mention p { flex-basis: 100%; }
+}
+
+/* Product page: the insurance box under the price */
+.sidebar-insure img { height: 52px; width: auto; }
+.sidebar-insure p { font-size: .9rem; margin: .85rem 0 1rem; line-height: 1.55; }
+.sidebar-insure .btn { width: 100%; justify-content: center; }
+
+/* Footer: the insurer logo under the socials */
+.footer-partner { display: inline-flex; flex-direction: column; gap: .5rem; margin-top: 1.5rem; font-size: .85rem; }
+.footer-partner img { height: 44px; width: auto; }
+
+/* Entrance: the hero copy rises in, the photo drifts slowly (both off under reduced motion). */
+.pi-hero-text > * { opacity: 0; animation: fadeSlideUp .7s cubic-bezier(.22,1,.36,1) forwards; }
+.pi-hero-text > :nth-child(1) { animation-delay: 60ms; }
+.pi-hero-text > :nth-child(2) { animation-delay: 140ms; }
+.pi-hero-text > :nth-child(3) { animation-delay: 220ms; }
+.pi-hero-text > :nth-child(4) { animation-delay: 300ms; }
+.pi-hero-media img { animation: piDrift 18s ease-in-out infinite alternate; }
+@keyframes piDrift { from { transform: scale(1); } to { transform: scale(1.08) translateX(-2%); } }
+@media (prefers-reduced-motion: reduce) {
+  .pi-hero-text > * { opacity: 1 !important; animation: none !important; }
+  .pi-hero-media img { animation: none !important; }
+}
+
+@media (max-width: 1024px) {
+  .pa-band-grid, .pi-hero-grid, .pi-since-grid { grid-template-columns: 1fr; gap: 2rem; }
+  .pa-band-media { aspect-ratio: 16 / 9; }
+  .pi-hero-grid { padding-top: 3rem; padding-bottom: 3rem; }
+  .pi-hero-media { aspect-ratio: 16 / 10; }
+  .pi-split-head, .pi-quote-head { grid-template-columns: 1fr; gap: 1rem; }
+  .pi-split-grid, .pq { grid-template-columns: 1fr; }
+  .pi-land { grid-template-rows: none; grid-template-columns: 1fr 1fr; }
+  .pi-since-media { aspect-ratio: 16 / 10; }
+}
+@media (max-width: 600px) {
+  .pa-figures { grid-template-columns: 1fr 1fr; }
+  .pa-figures > div:first-child { grid-column: span 2; }
+  .pa-band-ctas .btn, .pi-hero-ctas .btn { width: 100%; justify-content: center; }
+  .pa-lockup { flex-wrap: nowrap; gap: .6rem; }
+  .pa-lockup-mg, .pi-hero .pa-lockup-mg { font-size: 1.1rem; }
+  .pa-lockup-mg img, .pi-hero .pa-lockup-mg img { height: 32px; }
+  .pa-lockup-parrado, .pi-hero .pa-lockup-parrado { height: 44px; }
+  .pi-land { grid-template-columns: 1fr; }
+  .pi-offer { padding: 1.5rem; }
+  .pi-pillars { grid-template-columns: 1fr; gap: 1.25rem; }
+  .pq-options { grid-template-columns: 1fr; gap: .5rem; }
+  .pq-option { min-height: 0; flex-direction: row; align-items: baseline; justify-content: flex-start; gap: .75rem; padding: 1rem 3rem 1rem 1.1rem; }
+  .pq-option input { top: 50%; transform: translateY(-50%); }
+  .pq-option-benefit { font-size: 1.1rem; margin-left: auto; white-space: nowrap; }
+  .pq-preview { padding: 1.25rem; }
 }
