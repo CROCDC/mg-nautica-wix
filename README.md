@@ -15,7 +15,8 @@ fed with Wix Stores data instead of the Flask DB.
 - **Next.js 16** (App Router) + React 19 + TypeScript
 - **Wix SDK** (`@wix/sdk`, `@wix/stores`, `@wix/ecom`, `@wix/redirects`) as the data/commerce backend
 - Styling: the ported `app/main.css` (the original site's stylesheet, used as-is)
-- **GitHub** (source) → **GitHub Actions** (CI) → **Vercel** (deploy)
+- **GitHub** (source) → **GitHub Actions** (CI) → **Vercel** (production only)
+- Demo/preview environments: **the nexttech Pi** via `preview/<name>` branches (see [Design previews](#design-previews-pi))
 
 ## Getting started
 
@@ -66,17 +67,22 @@ GitHub Actions owns the deploy (see plan §4):
 
 - **`.github/workflows/ci.yml`** — runs on every push/PR: `lint`, `typecheck`, `build`. Set it
   as a **required check** on `main` in branch protection.
-- **`.github/workflows/deploy.yml`** — PR → Vercel **Preview**, `main` → **Production**.
-  It is **inert until enabled**: set the repo variable `DEPLOY_ENABLED=true` and the secrets
+- **`.github/workflows/deploy.yml`** — `main` → Vercel **Production**, and nothing else: PRs do
+  **not** get a Vercel preview (demos go to the Pi, see below). It is **inert until enabled**: set the repo variable `DEPLOY_ENABLED=true` and the secrets
   `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` (get the IDs with `vercel link`). Turn
   **off** Vercel's own Git integration for this project so deploys happen only from Actions.
 
 App env vars (`NEXT_PUBLIC_WIX_CLIENT_ID`, etc.) live in the Vercel project settings.
 
+> **Vercel is production only.** Never create a demo or preview environment on Vercel
+> (`vercel deploy` without `--prod`, Vercel's Git integration, preview URLs to share): every
+> environment to show a branch runs on the Pi as `preview/<name>`.
+
 ## Design previews (Pi)
 
-Every `preview/<name>` branch gets its own environment on the nexttech Pi, to show
-alternative designs side by side without touching production:
+Every `preview/<name>` branch gets its own environment on the nexttech Pi. This is the only
+place demo environments live: to show a feature branch, push it (or a copy of it) as
+`preview/<name>` and share `https://mgn-<name>.nexttech.com.ar`:
 
 ```bash
 git checkout -b preview/dark-hero main
