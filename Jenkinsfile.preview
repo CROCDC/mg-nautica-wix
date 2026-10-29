@@ -1,0 +1,56 @@
+// Pi preview environments: one per `preview/<name>` branch (see docker-compose.preview.yml).
+// Triggered by .github/workflows/preview.yml with ACTION=deploy on push and
+// ACTION=destroy when the branch is deleted (then GIT_REF is main, since the branch is gone).
+pipeline {
+  agent any
+
+  options {
+    // Next builds are heavy for the Pi: previews build one at a time.
+    disableConcurrentBuilds()
+  }
+
+  environment {
+    COMPOSE_FILE = 'docker-compose.preview.yml'
+  }
+
+  stages {
+    stage('Resolve') {
+      steps {
+        script {
+          def branch = params.PREVIEW_BRANCH?.trim() ?: ''
+          if (!branch.startsWith('preview/')) {
+            error "PREVIEW_BRANCH must look like preview/<name>, got '${branch}'"
+          }
+          def slug = branch.substring('preview/'.length())
+            .toLowerCase()
+            .replaceAll(/[^a-z0-9]+/, '-')
+            .replaceAll(/^-+|-+$/, '')
+          // mgn-<slug> must fit in one DNS label (63 chars).
+          if (!slug || slug.length() > 50) {
+            error "Invalid preview name '${branch}': use 1-50 letters, digits or dashes"
+          }
+          env.PREVIEW_SLUG = slug
+          currentBuild.displayName = "#${env.BUILD_NUMBER} ${params.ACTION} ${slug}"
+          currentBuild.description = "https://mgn-${slug}.nexttech.com.ar"
+        }
+      }
+    }
+
+    stage('Deploy') {
+      when { expression { params.ACTION == 'deploy' } }
+      steps {
+        sh 'docker compose build'
+        sh 'docker compose up -d --remove-orphans'
+        // Each rebuild leaves the previous image of this preview dangling; the disk is small.
+        sh 'docker image prune -f'
+      }
+    }
+
+    stage('Destroy') {
+      when { expression { params.ACTION == 'destroy' } }
+      steps {
+        sh 'docker compose down --rmi all --remove-orphans'
+      }
+    }
+  }
+}
