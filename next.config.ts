@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
       { source: "/quienes-somos", destination: "/about-us", permanent: true },
       { source: "/servicios", destination: "/services", permanent: true },
       { source: "/vender-tu-embarcacion", destination: "/sell-your-boat", permanent: true },
+      // Short Spanish alias for the Parrado Seguros campaign (flyers, Instagram bio).
+      { source: "/seguros", destination: "/insurance", permanent: true },
     ];
   },
 };

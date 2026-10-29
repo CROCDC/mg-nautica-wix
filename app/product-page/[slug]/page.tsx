@@ -5,6 +5,8 @@ import { getBoatBySlug, formatUsd, ricosToPlainText } from "@/lib/wix";
 import Gallery from "@/components/Gallery";
 import RichText from "@/components/RichText";
 import { LANDING_BY_SLUG } from "@/lib/landings";
+import { ParradoSidebar } from "@/components/ParradoAlliance";
+import { insuranceHref } from "@/lib/parrado";
 
 // Always fetch the latest from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -130,6 +132,7 @@ export default async function ProductPage({
               compra, trámites y traslado.
             </p>
           </div>
+          <ParradoSidebar href={insuranceHref(boat.name)} />
         </aside>
       </div>
     </div>

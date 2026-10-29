@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ParradoServices } from "@/components/ParradoAlliance";
 
 export const metadata: Metadata = {
   title: "Servicios",
@@ -49,7 +50,7 @@ const SERVICES = [
   {
     icon: "📋",
     title: "Trámites y gestión",
-    body: "Gestión de matrículas, seguros y habilitaciones ante PNA, ARBA y AGIP. Asesoramiento desde el primer día hasta la transferencia definitiva.",
+    body: "Gestión de matrículas, seguros con Parrado & Asociados y habilitaciones ante PNA, ARBA y AGIP. Asesoramiento desde el primer día hasta la transferencia definitiva.",
   },
   {
     icon: "📡",
@@ -149,6 +150,8 @@ export default function Services() {
           </div>
         </div>
       </section>
+
+      <ParradoServices />
 
       <section className="cta-band">
         <h2>¿Necesitás más información?</h2>

@@ -49,6 +49,17 @@
         { sel: ".content-2col > *",   step: 120 },
         { sel: ".step-list li",       step: 80 },
         { sel: ".footer-col",         step: 60 },
+        { sel: ".ps-mention",         step: 0 },
+        { sel: ".ps-band-head > *",   step: 80 },
+        { sel: ".ps-figures li",      step: 110 },
+        { sel: ".ps-split-head > *",  step: 80 },
+        { sel: ".ps-acc",             step: 0 },
+        { sel: ".ps-send",            step: 0 },
+        { sel: ".ps-about-panel",     step: 0 },
+        { sel: ".ps-pillars > div",   step: 80 },
+        { sel: ".ps-tile",            step: 90 },
+        { sel: ".ps-services-photo",  step: 0 },
+        { sel: ".ps-services-text > *", step: 60 },
     ];
 
     revealGroups.forEach(function (g) {

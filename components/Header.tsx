@@ -8,6 +8,7 @@ const NAV = [
   { href: "/accessories", label: "Accesorios" },
   { href: "/brazil-course", label: "Curso en Brasil" },
   { href: "/services", label: "Servicios" },
+  { href: "/insurance", label: "Seguros" },
   { href: "/sell-your-boat", label: "Vendé tu embarcación" },
   { href: "/about-us", label: "Quiénes somos" },
   { href: "/contact", label: "Contacto" },

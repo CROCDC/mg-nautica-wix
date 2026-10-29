@@ -14,6 +14,7 @@ const NAV = [
   { label: "Accesorios", path: "/accessories", heading: "Accesorios náuticos" },
   { label: "Curso en Brasil", path: "/brazil-course", heading: "Cursos Internacionales — Brasil" },
   { label: "Servicios", path: "/services", heading: "Nuestros servicios" },
+  { label: "Seguros", path: "/insurance", heading: "Tu embarcación, siempre protegida" },
   { label: "Vendé tu embarcación", path: "/sell-your-boat", heading: "Vendé tu embarcación" },
   { label: "Quiénes somos", path: "/about-us", heading: "Quiénes somos" },
   { label: "Contacto", path: "/contact", heading: "Contacto" },
@@ -119,6 +120,7 @@ test("footer company links reach their pages", async ({ page }) => {
   const links = [
     { label: "Quiénes somos", path: "/about-us" },
     { label: "Servicios", path: "/services" },
+    { label: "Seguros", path: "/insurance" },
     { label: "Vendé tu embarcación", path: "/sell-your-boat" },
     { label: "Contacto", path: "/contact" },
     { label: "Newsletter", path: "/newsletter" },
@@ -126,7 +128,8 @@ test("footer company links reach their pages", async ({ page }) => {
 
   for (const link of links) {
     await page.goto("/");
-    await page.locator(".site-footer").getByRole("link", { name: link.label }).click();
+    // Exact: the insurer's logo link also says "seguros" in its accessible name.
+    await page.locator(".site-footer").getByRole("link", { name: link.label, exact: true }).click();
     await page.waitForURL(`**${link.path}`);
   }
 });

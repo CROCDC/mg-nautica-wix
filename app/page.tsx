@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getAllBoats, type Boat } from "@/lib/wix";
 import BoatCard from "@/components/BoatCard";
 import CountUp from "@/components/CountUp";
+import { ParradoMention } from "@/components/ParradoAlliance";
 
 // Always fetch the latest catalog from Wix on every request (no caching).
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ const SERVICES = [
   { icon: "⚓", title: "Gestión de corretaje", body: "Compra y venta con asesoramiento experto y brokers especializados en cada región." },
   { icon: "🔧", title: "Mantenimiento técnico", body: "Cuidado artesanal y mantenimiento periódico para mantener tu embarcación en condiciones óptimas." },
   { icon: "🗺️", title: "Traslados y logística", body: "Traslados nacionales e internacionales con capitanes certificados." },
-  { icon: "📋", title: "Asesoría integral", body: "Trámites, seguros, matrículas y gestión administrativa desde el primer día." },
+  { icon: "📋", title: "Asesoría integral", body: "Trámites, seguros con Parrado & Asociados, matrículas y gestión administrativa desde el primer día." },
 ];
 
 export default async function Home() {
@@ -153,6 +154,7 @@ export default async function Home() {
               </div>
             ))}
           </div>
+          <ParradoMention />
           <div style={{ textAlign: "center", marginTop: "2rem" }}>
             <Link className="btn btn-outline" href="/services">
               Ver todos los servicios
