@@ -63,10 +63,25 @@ test("hero says where the boat is and under which flag", async ({ page }) => {
   await page.goto(LANDING);
   const facts = page.locator(".bl-hero-facts");
 
-  await expect(facts).toContainText("Riachuelo, Colonia del Sacramento, Uruguay");
+  // Full name and acronym, so nobody mistakes it for the Club Náutico San Isidro.
+  await expect(facts).toContainText("Yacht Club San Isidro (YCSI), San Isidro, Buenos Aires");
   await expect(facts).toContainText("Bandera argentina");
   // The pin icon is decorative, so screen readers get the word instead.
   await expect(facts.getByText("Ubicación:")).toHaveCount(1);
+});
+
+test("the hero location opens the club on the map in a new tab", async ({ page }) => {
+  await page.goto(LANDING);
+  const link = page.locator(".bl-hero-facts").getByRole("link", { name: /Yacht Club San Isidro/ });
+
+  await expect(link).toHaveAccessibleName(/ver en el mapa/);
+  await expect(link).toHaveAttribute("target", "_blank");
+  await expect(link).toHaveAttribute("rel", /noopener/);
+  const href = new URL((await link.getAttribute("href")) ?? "");
+  expect(href.origin + href.pathname).toBe("https://www.google.com/maps/search/");
+  expect(href.searchParams.get("query")).toBe(
+    "Yacht Club San Isidro, Camino de la Escollera 1051, San Isidro, Buenos Aires",
+  );
 });
 
 test("key stats strip shows the six headline numbers", async ({ page }) => {
@@ -94,7 +109,8 @@ test("technical sheet lists every spec from the listing", async ({ page }) => {
     Diseño: "Campos",
     Matrícula: "06902 REY",
     Bandera: "Argentina",
-    Ubicación: "Riachuelo, Colonia del Sacramento, Uruguay",
+    Ubicación: "Yacht Club San Isidro (YCSI), San Isidro, Buenos Aires",
+    Dirección: "Camino de la Escollera 1051 (1642), San Isidro",
   };
   for (const [label, value] of Object.entries(rows)) {
     const row = sheet.locator(".bl-spec-row").filter({ has: page.locator("dt", { hasText: label }) });

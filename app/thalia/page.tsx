@@ -15,6 +15,7 @@ import {
   SPECS,
   THALIA_FLAG,
   THALIA_LOCATION,
+  THALIA_MAP_URL,
   THALIA_PRODUCT_SLUG,
   THALIA_REEL_POSTER,
   THALIA_REEL_VARIANTS,
@@ -29,7 +30,7 @@ export const dynamic = "force-dynamic";
 
 const TITLE = "Thalia — Motovelero clásico de madera de 1931";
 const DESCRIPTION =
-  "Thalia, motovelero clásico de madera de 1931 con aparejo cutter, refit integral y cubierta de teca. 10,05 m de eslora, motor Volvo Penta 43 HP, bandera argentina. En Riachuelo, Colonia del Sacramento. En venta con MG Náutica.";
+  "Thalia, motovelero clásico de madera de 1931 con aparejo cutter, refit integral y cubierta de teca. 10,05 m de eslora, motor Volvo Penta 43 HP, bandera argentina. En el Yacht Club San Isidro (YCSI), San Isidro, Buenos Aires. En venta con MG Náutica.";
 
 // Absolute on purpose: Meta's bot rejects relative og:image URLs (see app/layout.tsx).
 const OG_IMAGE = wixImageUrl(PHOTOS.aerial, 1200, 630, { q: 82 });
@@ -129,7 +130,10 @@ export default async function ThaliaLanding() {
                 </svg>
                 <span>
                   <span className="bl-sr">Ubicación: </span>
-                  {THALIA_LOCATION}
+                  <a href={THALIA_MAP_URL} target="_blank" rel="noopener">
+                    {THALIA_LOCATION}
+                    <span className="bl-sr"> (ver en el mapa)</span>
+                  </a>
                 </span>
               </li>
               <li>

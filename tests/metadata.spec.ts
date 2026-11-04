@@ -120,7 +120,7 @@ test("the Thalia landing has its own title, description and canonical", async ({
   const description = await content(page, 'meta[name="description"]');
   expect(description).toContain("motovelero clásico de madera de 1931");
   // Where the boat is and its flag are the first things buyers ask.
-  expect(description).toContain("Colonia del Sacramento");
+  expect(description).toContain("Yacht Club San Isidro (YCSI)");
   expect(description).toContain("bandera argentina");
   expect(await page.locator('link[rel="canonical"]').first().getAttribute("href")).toMatch(/\/thalia$/);
 });
