@@ -15,7 +15,15 @@ export { THALIA_PRODUCT_SLUG } from "@/lib/landings";
  * the listing anyway: it is what a visitor sees whenever Wix is down.
  */
 export const THALIA_FALLBACK_PRICE_USD = 29000;
-export const THALIA_LOCATION = "Riachuelo, Colonia del Sacramento, Uruguay";
+// Where the boat is moored: the Yacht Club San Isidro (YCSI), not the Club Náutico San
+// Isidro (CNSI), which is a different club in the same town — hence the full name and
+// the acronym. The address is the club's "Sede Social" as listed on its own site
+// (ycsi.org.ar) and by the FAY, and OpenStreetMap places the club at that same spot.
+export const THALIA_LOCATION = "Yacht Club San Isidro (YCSI), San Isidro, Buenos Aires";
+export const THALIA_ADDRESS = "Camino de la Escollera 1051 (1642), San Isidro";
+export const THALIA_MAP_URL =
+  "https://www.google.com/maps/search/?api=1&query=" +
+  encodeURIComponent("Yacht Club San Isidro, Camino de la Escollera 1051, San Isidro, Buenos Aires");
 export const THALIA_FLAG = "Argentina";
 
 export type ThaliaPrice = {
@@ -174,6 +182,7 @@ export const SPECS: { label: string; value: string }[] = [
   { label: "Tipo", value: "Motovelero" },
   { label: "Bandera", value: THALIA_FLAG },
   { label: "Ubicación", value: THALIA_LOCATION },
+  { label: "Dirección", value: THALIA_ADDRESS },
   { label: "Material del casco", value: "Madera" },
   { label: "Constructor", value: "Parodi" },
   { label: "Diseño", value: "Campos" },
