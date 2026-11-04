@@ -1,4 +1,5 @@
 import type { BoatImage } from "@/lib/wix-image";
+import type { Boat } from "@/lib/wix";
 import type { ReelVariant } from "@/components/HeroReel";
 
 export { THALIA_PRODUCT_SLUG } from "@/lib/landings";
@@ -6,11 +7,38 @@ export { THALIA_PRODUCT_SLUG } from "@/lib/landings";
 // Curated copy for the Thalia landing. It is hand-edited from the owners' listing in the
 // Wix dashboard rather than parsed out of it: the listing is free-form HTML, and a landing
 // page needs the facts split into stats, specs and a timeline that the HTML does not mark.
-// If the listing changes (price above all), this file has to follow.
+// If the listing changes, this file has to follow — except for the price, which the
+// landing reads off the listing itself (see thaliaPrice below).
 
-export const THALIA_PRICE_USD = 35000;
+/**
+ * Last known listing price, shown only when Wix does not answer. Keep it in step with
+ * the listing anyway: it is what a visitor sees whenever Wix is down.
+ */
+export const THALIA_FALLBACK_PRICE_USD = 29000;
 export const THALIA_LOCATION = "Riachuelo, Colonia del Sacramento, Uruguay";
 export const THALIA_FLAG = "Argentina";
+
+export type ThaliaPrice = {
+  /** What the visitor pays; null when the listing has no price ("Consultar"). */
+  priceUsd: number | null;
+  /** The crossed-out "before" price, only while the listing marks the boat on sale. */
+  compareAtUsd: number | null;
+};
+
+/**
+ * The landing's price, taken from the Wix listing so it always says what the catalog
+ * says: the owner changes it in the Wix dashboard and both pages follow. `listing` is
+ * null when Wix did not answer, and only then does the fallback stand in.
+ */
+export function thaliaPrice(
+  listing: Pick<Boat, "priceUsd" | "compareAtUsd" | "onSale"> | null,
+): ThaliaPrice {
+  if (!listing) return { priceUsd: THALIA_FALLBACK_PRICE_USD, compareAtUsd: null };
+  return {
+    priceUsd: listing.priceUsd,
+    compareAtUsd: listing.onSale ? listing.compareAtUsd : null,
+  };
+}
 
 export const THALIA_WHATSAPP_URL =
   "https://wa.me/5491126949628?text=" +

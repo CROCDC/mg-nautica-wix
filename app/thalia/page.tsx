@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { wixImageUrl } from "@/lib/wix-image";
+import { formatUsd, getBoatBySlug } from "@/lib/wix";
 import HeroReel from "@/components/HeroReel";
 import PhotoGrid from "@/components/PhotoGrid";
 import {
@@ -14,13 +15,17 @@ import {
   SPECS,
   THALIA_FLAG,
   THALIA_LOCATION,
-  THALIA_PRICE_USD,
   THALIA_PRODUCT_SLUG,
   THALIA_REEL_POSTER,
   THALIA_REEL_VARIANTS,
   THALIA_WHATSAPP_URL,
   TIMELINE,
+  thaliaPrice,
 } from "./thalia";
+
+// The price comes from the Wix listing, so the page is rendered per request like the
+// catalog: a price changed in the Wix dashboard shows up here on the next visit.
+export const dynamic = "force-dynamic";
 
 const TITLE = "Thalia — Motovelero clásico de madera de 1931";
 const DESCRIPTION =
@@ -51,31 +56,40 @@ export const metadata: Metadata = {
   },
 };
 
-const PRICE = "US$ " + THALIA_PRICE_USD.toLocaleString("en-US");
 const LISTING_PATH = `/product-page/${encodeURIComponent(THALIA_PRODUCT_SLUG)}`;
 
-const JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "Product",
-  name: "Thalia — Motovelero clásico de madera (1931)",
-  description: DESCRIPTION,
-  image: GALLERY.map((img) => wixImageUrl(img, 1200, 800, { mode: "fit" })),
-  offers: {
-    "@type": "Offer",
-    price: THALIA_PRICE_USD,
-    priceCurrency: "USD",
-    availability: "https://schema.org/InStock",
-    url: "https://mgnauticabroker.com/thalia",
-    seller: { "@type": "Organization", name: "MG Náutica" },
-  },
-};
+function jsonLd(priceUsd: number | null) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: "Thalia — Motovelero clásico de madera (1931)",
+    description: DESCRIPTION,
+    image: GALLERY.map((img) => wixImageUrl(img, 1200, 800, { mode: "fit" })),
+    // An offer without a price is invalid for search engines, so a listing on
+    // "Consultar" publishes none.
+    ...(priceUsd != null
+      ? {
+          offers: {
+            "@type": "Offer",
+            price: priceUsd,
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+            url: "https://mgnauticabroker.com/thalia",
+            seller: { "@type": "Organization", name: "MG Náutica" },
+          },
+        }
+      : {}),
+  };
+}
 
-export default function ThaliaLanding() {
+export default async function ThaliaLanding() {
+  const price = thaliaPrice(await getBoatBySlug(THALIA_PRODUCT_SLUG));
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(price.priceUsd)) }}
       />
 
       {/* Hero */}
@@ -100,7 +114,13 @@ export default function ThaliaLanding() {
             </p>
             <div className="bl-hero-price">
               <span className="bl-hero-price-label">Precio</span>
-              <span className="bl-hero-price-value">{PRICE}</span>
+              <span className="bl-hero-price-value">{formatUsd(price.priceUsd) ?? "Consultar"}</span>
+              {price.compareAtUsd ? (
+                <span className="bl-hero-price-old">
+                  <span className="bl-sr">Antes: </span>
+                  <s>{formatUsd(price.compareAtUsd)}</s>
+                </span>
+              ) : null}
             </div>
             <ul className="bl-hero-facts">
               <li>
