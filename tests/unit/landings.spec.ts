@@ -2,15 +2,23 @@
  * Unit layer: the landing-page wiring in lib/landings.ts and the curated Thalia data.
  *
  * The product page looks landings up by the exact Wix slug, which carries accents. That
- * slug is checked against the real catalog in live/thalia.spec.ts — the cassette was
- * recorded before Thalia was listed.
+ * slug is checked against the real catalog in live/thalia.spec.ts — the cassette's
+ * catalog query was recorded before Thalia was listed; it only holds the listing itself.
  */
 
 import { test, expect } from "@playwright/test";
 import { LANDING_BY_SLUG, THALIA_PRODUCT_SLUG, boatHref } from "@/lib/landings";
 import { readFileSync, statSync } from "node:fs";
 import path from "node:path";
-import { GALLERY, PHOTOS, SPECS, THALIA_REEL_POSTER, THALIA_REEL_VARIANTS } from "@/app/thalia/thalia";
+import {
+  GALLERY,
+  PHOTOS,
+  SPECS,
+  THALIA_FALLBACK_PRICE_USD,
+  THALIA_REEL_POSTER,
+  THALIA_REEL_VARIANTS,
+  thaliaPrice,
+} from "@/app/thalia/thalia";
 
 test("the thalia slug is stored in the same unicode form Wix uses", () => {
   expect(THALIA_PRODUCT_SLUG).toBe(THALIA_PRODUCT_SLUG.normalize("NFC"));
@@ -25,6 +33,30 @@ test("catalog cards send every other boat to its listing", () => {
   expect(boatHref("impecable-grumete-de-madera-solo-para-entendidos")).toBe(
     "/product-page/impecable-grumete-de-madera-solo-para-entendidos",
   );
+});
+
+test("the landing takes its price from the Wix listing", () => {
+  expect(thaliaPrice({ priceUsd: 27500, compareAtUsd: null, onSale: false })).toEqual({
+    priceUsd: 27500,
+    compareAtUsd: null,
+  });
+});
+
+test("the landing crosses out the previous price only while the listing is on sale", () => {
+  expect(thaliaPrice({ priceUsd: 29000, compareAtUsd: 35000, onSale: true })).toEqual({
+    priceUsd: 29000,
+    compareAtUsd: 35000,
+  });
+  // Wix can keep a compare-at price that is not above the price; that is no sale.
+  expect(thaliaPrice({ priceUsd: 29000, compareAtUsd: 29000, onSale: false }).compareAtUsd).toBeNull();
+});
+
+test("a listing without a price says so instead of showing the fallback", () => {
+  expect(thaliaPrice({ priceUsd: null, compareAtUsd: null, onSale: false }).priceUsd).toBeNull();
+});
+
+test("when Wix does not answer the landing falls back to the last known price", () => {
+  expect(thaliaPrice(null)).toEqual({ priceUsd: THALIA_FALLBACK_PRICE_USD, compareAtUsd: null });
 });
 
 test("every thalia photo points at the Wix CDN and knows its dimensions", () => {

@@ -1,18 +1,21 @@
 /**
- * E2E: the Thalia landing — a static, hand-curated page for one catalog boat.
+ * E2E: the Thalia landing — a hand-curated page for one catalog boat.
  *
- * It renders without Wix API calls, so what can break here is the page itself: the
- * copy a buyer reads (price, specs), the hand-off to WhatsApp, the photo grid and its
- * lightbox, and the background video, which must stay out of the way of visitors who
- * ask for reduced motion.
+ * All of it is hand-written except the price, which is read off the Wix listing so the
+ * landing and the catalog can never disagree; the cassette holds Thalia's listing for
+ * that. The rest is the page itself: the copy a buyer reads (specs, timeline), the
+ * hand-off to WhatsApp, the photo grid and its lightbox, and the background video,
+ * which must stay out of the way of visitors who ask for reduced motion.
  */
 
 import path from "node:path";
 import { test, expect, type Page } from "./fixtures";
 import type { Browser } from "@playwright/test";
 import { SAMPLE_PRODUCT_SLUG } from "./pages";
+import { THALIA_PRODUCT_SLUG } from "@/lib/landings";
 
 const LANDING = "/thalia";
+const LISTING = `/product-page/${encodeURIComponent(THALIA_PRODUCT_SLUG)}`;
 const GALLERY_SIZE = 9;
 
 // A 1s VP8 clip stands in for every reel variant: Playwright's Chromium ships without
@@ -32,7 +35,28 @@ test("hero introduces the boat with its name, year and price", async ({ page }) 
   await expect(page.locator(".bl-hero .hero-eyebrow")).toHaveText(
     "Motovelero clásico de madera · 1931",
   );
-  await expect(page.locator(".bl-hero-price-value")).toHaveText("US$ 35,000");
+  await expect(page.locator(".bl-hero-price-value")).toHaveText("US$ 29,000");
+});
+
+// The cassette's listing has the boat on sale (US$ 29,000, compare-at US$ 35,000).
+test("hero crosses out the listing's previous price while the boat is on sale", async ({ page }) => {
+  await page.goto(LANDING);
+  const old = page.locator(".bl-hero-price-old");
+
+  await expect(old.locator("s")).toHaveText("US$ 35,000");
+  // A strikethrough alone says nothing to a screen reader, so the word goes with it.
+  await expect(old).toHaveText("Antes: US$ 35,000");
+});
+
+test("the landing shows the same price as the catalog listing", async ({ page }) => {
+  await page.goto(LISTING);
+  const listed = (await page.locator(".sidebar-price").textContent())?.trim() ?? "";
+  const before = (await page.locator(".sidebar-price-old").textContent())?.trim() ?? "";
+
+  await page.goto(LANDING);
+
+  expect(listed).toContain((await page.locator(".bl-hero-price-value").textContent())?.trim());
+  expect(before).toContain((await page.locator(".bl-hero-price-old s").textContent())?.trim());
 });
 
 test("hero says where the boat is and under which flag", async ({ page }) => {
@@ -501,7 +525,7 @@ test("the page publishes product structured data with the right offer", async ({
   const data = JSON.parse(raw ?? "{}");
 
   expect(data["@type"]).toBe("Product");
-  expect(data.offers).toMatchObject({ price: 35000, priceCurrency: "USD" });
+  expect(data.offers).toMatchObject({ price: 29000, priceCurrency: "USD" });
   expect(data.image).toHaveLength(GALLERY_SIZE);
   for (const url of data.image) expect(url).toMatch(/^https:\/\/static\.wixstatic\.com\//);
 });
@@ -509,8 +533,7 @@ test("the page publishes product structured data with the right offer", async ({
 // ----- Link from the catalog --------------------------------------------------
 
 test("a boat without a landing gets no 'presentación completa' link", async ({ page }) => {
-  // The positive case lives in the live suite: the cassette does not hold Thalia's
-  // detail page, and re-recording it would churn the whole screenshot baseline.
+  // The positive case lives in the live suite, which also proves the slug still exists.
   await page.goto(`/product-page/${SAMPLE_PRODUCT_SLUG}`);
 
   await expect(page.getByRole("link", { name: /Contactar por WhatsApp/ })).toBeVisible();
