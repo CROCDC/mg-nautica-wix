@@ -101,8 +101,9 @@ git push origin --delete preview/dark-hero   # tears the environment down
 - **The Pi never builds.** `npm ci` + `next build` need more memory than it has spare: every
   build there ran it out of RAM and took Jenkins down mid-step. The compose file has no
   `build:` on purpose, so a missing image fails the deploy instead of starting a build.
-- The GHCR package `mg-nautica-wix-preview` must be **public** (Package settings → Change
-  visibility) so the Pi can pull without credentials. It only holds the public site.
+- The GHCR package `mg-nautica-wix-preview` is **public** (it took the repo's visibility), so
+  the Pi pulls without credentials. If it is ever made private, the Pi's pull fails until
+  Docker on the Pi logs in to ghcr.io.
 - The name is lowercased and anything outside `a-z0-9` becomes `-` (max 50 chars).
 - Previews read the live Wix catalog, send `X-Robots-Tag: noindex`, and have the newsletter
   off (no `WIX_API_KEY`). A push is live in a few minutes: the image build in Actions, then
