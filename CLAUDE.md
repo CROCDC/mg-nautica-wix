@@ -7,6 +7,9 @@
   `preview/<name>` branch (git flow: cut it from the `feature/*` or `fix/*` branch to show),
   deployed by `.github/workflows/preview.yml` → Jenkins job `mg-nautica-wix-preview` at
   `https://mgn-<name>.nexttech.com.ar`. Deleting the branch tears the environment down.
+- The preview image is built by GitHub Actions (arm64 runner) and pushed to GHCR; the Pi only
+  pulls and runs it. Never move the build back onto the Pi: it runs out of memory and takes
+  Jenkins down with it.
 - Never run `vercel deploy` (with or without `--prod`) by hand, and never hand out a
   `*.vercel.app` URL as a demo. If the Pi pipeline is broken, fix the pipeline.
 

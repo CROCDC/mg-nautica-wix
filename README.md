@@ -90,12 +90,21 @@ git push -u origin preview/dark-hero   # → https://mgn-dark-hero.nexttech.com.
 git push origin --delete preview/dark-hero   # tears the environment down
 ```
 
-- **`.github/workflows/preview.yml`** triggers the Jenkins job `mg-nautica-wix-preview`:
-  `deploy` on every push to the branch, `destroy` when the branch is deleted.
-- **`Jenkinsfile.preview`** + **`docker-compose.preview.yml`** build the `Dockerfile` and run
-  it as compose project `mgn-<name>`; nginx-proxy routes the host, and the `*.nexttech.com.ar`
+- **`.github/workflows/preview.yml`** builds the `Dockerfile` on GitHub's arm64 runner (the
+  Pi's CPU; free for public repos), pushes it to GHCR as
+  `ghcr.io/crocdc/mg-nautica-wix-preview:<name>`, then triggers the Jenkins job
+  `mg-nautica-wix-preview`: `deploy` on every push to the branch, `destroy` when the branch
+  is deleted.
+- **`Jenkinsfile.preview`** + **`docker-compose.preview.yml`** pull that image and run it as
+  compose project `mgn-<name>`; nginx-proxy routes the host, and the `*.nexttech.com.ar`
   wildcard (DNS + cert) covers any name, so a new preview needs no infra change.
+- **The Pi never builds.** `npm ci` + `next build` need more memory than it has spare: every
+  build there ran it out of RAM and took Jenkins down mid-step. The compose file has no
+  `build:` on purpose, so a missing image fails the deploy instead of starting a build.
+- The GHCR package `mg-nautica-wix-preview` must be **public** (Package settings → Change
+  visibility) so the Pi can pull without credentials. It only holds the public site.
 - The name is lowercased and anything outside `a-z0-9` becomes `-` (max 50 chars).
 - Previews read the live Wix catalog, send `X-Robots-Tag: noindex`, and have the newsletter
-  off (no `WIX_API_KEY`). Builds run one at a time, so a few minutes per push on the Pi.
+  off (no `WIX_API_KEY`). A push is live in a few minutes: the image build in Actions, then
+  the pull on the Pi.
 - The destroy step runs `Jenkinsfile.preview` from `main`, so these files must be on `main`.

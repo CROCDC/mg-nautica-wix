@@ -3,6 +3,12 @@ name: Preview (Pi)
 # Each `preview/<name>` branch gets its own environment on the Pi at
 # https://mgn-<name>.nexttech.com.ar, rebuilt on every push and torn down when the
 # branch is deleted. Production stays on Vercel (deploy.yml).
+#
+# The image is built HERE, not on the Pi: `npm ci` + `next build` need more memory than
+# the Pi has spare, and every build there ended with Jenkins killed mid-step. GitHub's
+# arm64 runner builds natively for the Pi's CPU (free for public repos), pushes to GHCR,
+# and Jenkins only pulls the image and starts it.
+#
 # Required repo secrets: JENKINS_USER, JENKINS_PASSWORD, JENKINS_API_TOKEN.
 on:
   push:
@@ -10,11 +16,59 @@ on:
   # `delete` only runs from the copy of this file on the default branch.
   delete:
 
+# A newer push to the same preview supersedes a build still in flight.
+concurrency:
+  group: preview-${{ github.event_name == 'push' && github.ref_name || github.event.ref }}
+  cancel-in-progress: true
+
 jobs:
+  image:
+    if: github.event_name == 'push' && !github.event.deleted
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Image name
+        id: meta
+        run: |
+          SLUG=$(echo "${GITHUB_REF_NAME#preview/}" | tr 'A-Z' 'a-z' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')
+          # GHCR names must be lowercase; the owner is CROCDC.
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/mg-nautica-wix-preview"
+          echo "tags=$IMAGE:$SLUG,$IMAGE:$SLUG-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          # Public OAuth client id (it ships in the browser bundle), not a secret.
+          build-args: |
+            NEXT_PUBLIC_WIX_CLIENT_ID=7d680ee7-e25e-46aa-876b-5ab99fb334f3
+          # One plain arm64 image, no attestation manifests for the Pi's Docker to trip on.
+          provenance: false
+          cache-from: type=gha,scope=preview
+          cache-to: type=gha,mode=max,scope=preview
+
   trigger:
+    needs: image
+    # Deploy once the image is in GHCR; destroy (branch deleted) needs no image.
     if: >-
-      (github.event_name == 'push' && !github.event.deleted) ||
-      (github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'preview/'))
+      always() && (
+        (github.event_name == 'push' && needs.image.result == 'success') ||
+        (github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'preview/'))
+      )
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Jenkins

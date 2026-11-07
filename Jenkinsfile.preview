@@ -1,11 +1,11 @@
 // Pi preview environments: one per `preview/<name>` branch (see docker-compose.preview.yml).
-// Triggered by .github/workflows/preview.yml with ACTION=deploy on push and
+// Triggered by .github/workflows/preview.yml with ACTION=deploy once the image is in GHCR and
 // ACTION=destroy when the branch is deleted (then GIT_REF is main, since the branch is gone).
 pipeline {
   agent any
 
   options {
-    // Next builds are heavy for the Pi: previews build one at a time.
+    // Deploys of different previews share the Pi's Docker: one at a time.
     disableConcurrentBuilds()
   }
 
@@ -39,10 +39,15 @@ pipeline {
     stage('Deploy') {
       when { expression { params.ACTION == 'deploy' } }
       steps {
-        sh 'docker compose build'
+        // The image is built by GitHub Actions (preview.yml) and pushed to GHCR before this
+        // job is triggered: the Pi only pulls and runs it. Building here ran the Pi out of
+        // memory and took Jenkins down with it.
+        sh 'docker compose pull'
         sh 'docker compose up -d --remove-orphans'
-        // Each rebuild leaves the previous image of this preview dangling; the disk is small.
+        // Each push leaves the previous image of this preview dangling, and the builds that
+        // used to run here left their cache behind; the disk is small.
         sh 'docker image prune -f'
+        sh 'docker builder prune -f'
       }
     }
 

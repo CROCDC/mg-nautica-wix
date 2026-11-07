@@ -1,5 +1,7 @@
 # Image for the Pi preview environments (docker-compose.preview.yml).
 # Production does not use it: Vercel builds and serves the site on its own.
+# Built by .github/workflows/preview.yml on GitHub's arm64 runner (the Pi's CPU) and pushed
+# to GHCR; the Pi only pulls it. `docker build` still works anywhere for local testing.
 FROM node:22-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
