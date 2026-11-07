@@ -1,0 +1,50 @@
+name: Preview (Pi)
+
+# Each `preview/<name>` branch gets its own environment on the Pi at
+# https://mgn-<name>.nexttech.com.ar, rebuilt on every push and torn down when the
+# branch is deleted. Production stays on Vercel (deploy.yml).
+# Required repo secrets: JENKINS_USER, JENKINS_PASSWORD, JENKINS_API_TOKEN.
+on:
+  push:
+    branches: ["preview/**"]
+  # `delete` only runs from the copy of this file on the default branch.
+  delete:
+
+jobs:
+  trigger:
+    if: >-
+      (github.event_name == 'push' && !github.event.deleted) ||
+      (github.event_name == 'delete' && github.event.ref_type == 'branch' && startsWith(github.event.ref, 'preview/'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Jenkins
+        env:
+          JENKINS_USER: ${{ secrets.JENKINS_USER }}
+          JENKINS_PASSWORD: ${{ secrets.JENKINS_PASSWORD }}
+          JENKINS_API_TOKEN: ${{ secrets.JENKINS_API_TOKEN }}
+          ACTION: ${{ github.event_name == 'push' && 'deploy' || 'destroy' }}
+          PREVIEW_BRANCH: ${{ github.event_name == 'push' && github.ref_name || github.event.ref }}
+          # A deleted branch can't be checked out, so destroy runs the Jenkinsfile from main.
+          GIT_REF: ${{ github.event_name == 'push' && github.ref_name || 'main' }}
+        run: |
+          if [ -z "$JENKINS_USER" ] || [ -z "$JENKINS_PASSWORD" ] || [ -z "$JENKINS_API_TOKEN" ]; then
+            echo "::error::Missing JENKINS_USER, JENKINS_PASSWORD or JENKINS_API_TOKEN repo secrets."
+            exit 1
+          fi
+          HTTP_CODE=$(curl -c cookie.txt -s -w "%{http_code}" -o crumb.json \
+            --user "$JENKINS_USER:$JENKINS_PASSWORD" \
+            "https://jenkins.nexttech.com.ar/crumbIssuer/api/json")
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Jenkins crumb request failed (HTTP $HTTP_CODE): $(head -c 200 crumb.json)"
+            exit 1
+          fi
+          CRUMB_HEADER=$(python3 -c "import json; d=json.load(open('crumb.json')); print(d['crumbRequestField'] + ': ' + d['crumb'])")
+          curl -sS --fail-with-body -b cookie.txt -X POST -H "$CRUMB_HEADER" \
+            --user "$JENKINS_USER:$JENKINS_PASSWORD" \
+            --data-urlencode "token=$JENKINS_API_TOKEN" \
+            --data-urlencode "ACTION=$ACTION" \
+            --data-urlencode "PREVIEW_BRANCH=$PREVIEW_BRANCH" \
+            --data-urlencode "GIT_REF=$GIT_REF" \
+            "https://jenkins.nexttech.com.ar/job/mg-nautica-wix-preview/buildWithParameters"
+          SLUG=$(echo "${PREVIEW_BRANCH#preview/}" | tr 'A-Z' 'a-z' | sed -E 's/[^a-z0-9]+/-/g; s/^-+|-+$//g')
+          echo "Jenkins: $ACTION https://mgn-$SLUG.nexttech.com.ar" >> "$GITHUB_STEP_SUMMARY"
