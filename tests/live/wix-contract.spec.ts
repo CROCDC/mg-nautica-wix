@@ -49,7 +49,7 @@ test("a live boat detail page resolves from the catalog", async ({ page }) => {
 
   await page.waitForURL("**/product-page/**");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
-  await expect(page.locator(".gallery-main img")).toBeVisible();
+  await expect(page.locator(".gallery-slide").first().locator("img")).toBeVisible();
   await expect(page.getByRole("link", { name: /Contactar por WhatsApp/ })).toBeVisible();
 });
 

@@ -11,10 +11,6 @@ import Lightbox from "@/components/Lightbox";
 export default function PhotoGrid({ images }: { images: BoatImage[] }) {
   const [open, setOpen] = useState<number | null>(null);
   const count = images.length;
-  const go = useCallback(
-    (dir: number) => setOpen((i) => (i == null ? i : (i + dir + count) % count)),
-    [count],
-  );
   const close = useCallback(() => setOpen(null), []);
 
   return (
@@ -42,7 +38,7 @@ export default function PhotoGrid({ images }: { images: BoatImage[] }) {
           );
         })}
       </div>
-      {open != null && <Lightbox images={images} index={open} onNavigate={go} onClose={close} />}
+      {open != null && <Lightbox images={images} index={open} onIndexChange={setOpen} onClose={close} />}
     </>
   );
 }
