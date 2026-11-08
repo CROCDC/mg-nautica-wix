@@ -1,0 +1,34 @@
+# One Pi preview environment per `preview/<name>` branch, served at
+# https://mgn-<name>.nexttech.com.ar (the wildcard DNS, tunnel and origin cert of
+# nexttech.com.ar already cover it, and nginx-proxy routes by VIRTUAL_HOST, so a new
+# preview needs no DNS, port or proxy change).
+#
+# Run by the Jenkins job `mg-nautica-wix-preview` (Jenkinsfile.preview), which sets
+# PREVIEW_SLUG from the branch name and pulls the image GitHub Actions built for it. The project name carries the slug, so every
+# preview is an independent compose project that can be torn down on its own.
+name: mgn-${PREVIEW_SLUG:?PREVIEW_SLUG is required}
+
+services:
+  app:
+    # Built and pushed by .github/workflows/preview.yml on GitHub's arm64 runner. There is
+    # deliberately no `build:` here: the Pi has no memory to spare for `next build`, so a
+    # missing image must fail the deploy rather than quietly start a build on the Pi.
+    image: ghcr.io/crocdc/mg-nautica-wix-preview:${PREVIEW_SLUG}
+    pull_policy: always
+    container_name: mgn-${PREVIEW_SLUG}
+    environment:
+      # No WIX_API_KEY on purpose: the newsletter form stays off in previews, so
+      # nobody showing a design writes test subscribers into the real Wix CRM.
+      - WIX_SITE_ID=11bbc77b-4b38-4e03-b035-4fa58dfd5963
+      - VIRTUAL_HOST=mgn-${PREVIEW_SLUG}.nexttech.com.ar
+      - VIRTUAL_PORT=3000
+    expose:
+      - "3000"
+    mem_limit: 512m
+    restart: unless-stopped
+    networks:
+      - proxy
+
+networks:
+  proxy:
+    external: true
