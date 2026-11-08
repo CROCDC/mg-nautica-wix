@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Only the Pi preview image (Dockerfile) sets these; Vercel builds stay untouched.
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
+  async headers() {
+    if (process.env.NOINDEX !== "1") return [];
+    // Previews duplicate the live site: keep them out of search results.
+    return [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }];
+  },
   images: {
     // Boat photos are served from the Wix CDN; allow next/image to optimize them.
     remotePatterns: [

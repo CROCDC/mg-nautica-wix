@@ -1,13 +1,13 @@
 name: Deploy
 
-# GitHub Actions owns the deploy (plan §4.3): PR -> Vercel Preview, main -> Production.
+# GitHub Actions owns the deploy (plan §4.3): main -> Vercel Production, nothing else.
+# Demo/preview environments live on the Pi (preview.yml), never on Vercel.
 # Inert until enabled: set repo variable DEPLOY_ENABLED=true and the three secrets
 # VERCEL_TOKEN / VERCEL_ORG_ID / VERCEL_PROJECT_ID. Turn OFF Vercel's own Git deploys
 # for this project so deploys happen only from here.
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -36,16 +36,8 @@ jobs:
       # NEXT_PUBLIC_WIX_CLIENT_ID — are present at build time). We do NOT use
       # --prebuilt: a CI-side build would inline an empty NEXT_PUBLIC_ value.
 
-      # ── Production (push to main, or manual run) ──
       - name: Deploy production
-        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
         run: |
           url=$(vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }})
           echo "Deployed to production: $url" >> "$GITHUB_STEP_SUMMARY"
 
-      # ── Preview (pull request) ──
-      - name: Deploy preview
-        if: github.event_name == 'pull_request'
-        run: |
-          url=$(vercel deploy --yes --token=${{ secrets.VERCEL_TOKEN }})
-          echo "Preview: $url" >> "$GITHUB_STEP_SUMMARY"
