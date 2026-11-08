@@ -12,6 +12,7 @@ import path from "node:path";
 import { test, expect, type Page } from "./fixtures";
 import type { Browser } from "@playwright/test";
 import { SAMPLE_PRODUCT_SLUG } from "./pages";
+import { swipe } from "./helpers/swipe";
 import { THALIA_PRODUCT_SLUG } from "@/lib/landings";
 
 const LANDING = "/thalia";
@@ -221,7 +222,8 @@ test("gallery tiles are square crops but the lightbox shows the whole photo", as
   expect(Math.abs((box?.width ?? 0) - (box?.height ?? 1))).toBeLessThanOrEqual(1);
 
   await photoTiles(page).nth(1).click();
-  expect(await page.locator(".lb-img").getAttribute("src")).toMatch(/\/v1\/fit\/w_1600,h_1600,/);
+  const enlarged = page.getByRole("dialog", { name: "Visor de fotos" }).getByRole("img");
+  expect(await enlarged.getAttribute("src")).toMatch(/\/v1\/fit\/w_1600,h_1600,/);
 });
 
 test("the first photo is featured at twice the size of the others", async ({ page }) => {
@@ -265,7 +267,10 @@ test("clicking a photo opens the lightbox on that same photo", async ({ page }) 
   const lightbox = page.getByRole("dialog", { name: "Visor de fotos" });
   await expect(lightbox).toBeVisible();
   await expect(lightbox.locator(".lb-counter")).toHaveText(`3 / ${GALLERY_SIZE}`);
-  await expect(lightbox.locator(".lb-img")).toHaveAttribute("alt", alt ?? "");
+  // The neighbouring photos are already in the swipe strip, hidden from assistive tech;
+  // the one role-visible image is the photo on screen.
+  await expect(lightbox.getByRole("img")).toHaveAttribute("alt", alt ?? "");
+  await expect(lightbox.getByRole("img")).toBeInViewport({ ratio: 0.9 });
 });
 
 test("lightbox arrows and keys move through the photos, wrapping at both ends", async ({ page }) => {
@@ -306,7 +311,7 @@ test("clicking the enlarged photo itself does not close the lightbox", async ({ 
   await page.goto(LANDING);
   await photoTiles(page).first().click();
 
-  await page.locator(".lb-img").click();
+  await page.getByRole("dialog", { name: "Visor de fotos" }).getByRole("img").click();
 
   await expect(page.locator(".lightbox.open")).toBeVisible();
 });
@@ -597,5 +602,27 @@ test.describe("on a 375px phone", () => {
     await page.locator(".lb-arrow.next").click();
 
     await expect(page.locator(".lb-counter")).toHaveText(`2 / ${GALLERY_SIZE}`);
+  });
+
+  test.describe("with a touch screen", () => {
+    test.use({ hasTouch: true });
+
+    test("visitor swipes through the enlarged photos with the finger", async ({ page }) => {
+      await page.goto(LANDING);
+
+      await photoTiles(page).first().tap();
+      const lightbox = page.getByRole("dialog", { name: "Visor de fotos" });
+
+      await swipe(page, lightbox, "left");
+      await expect(lightbox.locator(".lb-counter")).toHaveText(`2 / ${GALLERY_SIZE}`);
+      await swipe(page, lightbox, "left");
+      await expect(lightbox.locator(".lb-counter")).toHaveText(`3 / ${GALLERY_SIZE}`);
+      await swipe(page, lightbox, "right");
+      await expect(lightbox.locator(".lb-counter")).toHaveText(`2 / ${GALLERY_SIZE}`);
+
+      // The swipes moved photos; none of them counted as a tap on the backdrop.
+      await expect(lightbox).toBeVisible();
+      await expect(lightbox.getByRole("img")).toBeInViewport({ ratio: 0.9 });
+    });
   });
 });
